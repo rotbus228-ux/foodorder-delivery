@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -120,30 +120,56 @@ function MapPickerModal({ initialPos, onConfirm, onClose }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Profile Page
+   Profile Page  (ใช้เป็น Home Page ด้วย)
 ══════════════════════════════════════════════════════════════════ */
 export default function ProfilePage() {
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', phone: '', address: '', note: '', location: null })
-  const [saved,       setSaved]       = useState(false)
-  const [showMap,     setShowMap]     = useState(false)
-  const [showContact, setShowContact] = useState(false)
-  const [settings,    setSettings]    = useState({})
+  const navigate  = useNavigate()
+  const location  = useLocation()
 
-  /* load saved profile */
+  // ถ้า state.edit = true = มาจากหน้าเมนู (ต้องการแก้ไข) → ไม่ auto-redirect
+  const isEditMode = location.state?.edit === true
+
+  const [form, setForm] = useState({ name: '', phone: '', address: '', note: '', location: null })
+  const [hasProfile,   setHasProfile]   = useState(false)
+  const [saving,       setSaving]       = useState(false)
+  const [saved,        setSaved]        = useState(false)
+  const [showMap,      setShowMap]      = useState(false)
+  const [showContact,  setShowContact]  = useState(false)
+  const [settings,     setSettings]     = useState({})
+
+  /* ── โหลด profile จาก localStorage ── */
   useEffect(() => {
     const s = localStorage.getItem(PROFILE_KEY)
-    if (s) { try { setForm(JSON.parse(s)) } catch {} }
+    if (s) {
+      try {
+        const p = JSON.parse(s)
+        setForm(p)
+        const complete = !!(p.name?.trim() && p.phone?.trim() && p.address?.trim())
+        setHasProfile(complete)
+        // ถ้าข้อมูลครบและไม่ใช่ edit mode → ไปหน้าเมนูเลย
+        if (complete && !isEditMode) {
+          navigate('/order', { replace: true })
+          return
+        }
+      } catch {}
+    }
     axios.get(`${API_BASE}/settings`).then(r => setSettings(r.data?.data || {})).catch(() => {})
   }, [])
 
+  const setField = (key, val) => setForm(p => ({ ...p, [key]: val }))
+
   const handleSave = () => {
+    if (!form.name.trim() || !form.phone.trim() || !form.address.trim()) {
+      alert('กรุณากรอก ชื่อ, เบอร์โทร และที่อยู่ให้ครบ')
+      return
+    }
+    setSaving(true)
     localStorage.setItem(PROFILE_KEY, JSON.stringify(form))
     setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    setSaving(false)
+    // หลัง save → ไปหน้าเมนูเลย
+    setTimeout(() => navigate('/order', { replace: true }), 600)
   }
-
-  const setField = (key, val) => setForm(p => ({ ...p, [key]: val }))
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
@@ -162,30 +188,52 @@ export default function ProfilePage() {
 
       {/* ── Header ── */}
       <div className="bg-red-900 px-4 py-3 flex items-center gap-2 flex-shrink-0">
-        <button onClick={() => navigate('/order')}
-          className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-white font-black text-sm flex-shrink-0">
-          1
-        </button>
-        <div className="flex-1" />
+        {/* ปุ่ม back (แสดงเฉพาะ edit mode) */}
+        {isEditMode ? (
+          <button onClick={() => navigate('/order')}
+            className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-white font-black text-sm flex-shrink-0">
+            1
+          </button>
+        ) : (
+          <div className="w-10 h-10 flex items-center justify-center text-white text-2xl flex-shrink-0">🛵</div>
+        )}
+        <div className="flex-1 px-1">
+          <p className="text-white font-black text-sm leading-none">ข้อมูลที่อยู่</p>
+          <p className="text-red-200 text-[10px] mt-0.5">กรอกข้อมูลเพื่อรับอาหาร</p>
+        </div>
         <button onClick={() => setShowContact(true)}
           className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-base">ℹ️</button>
-        <button onClick={() => navigate('/history')}
+        <button onClick={() => navigate('/history', { state: { edit: true } })}
           className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-base">🕐</button>
         <button
           className="w-10 h-10 bg-white/40 rounded-full flex items-center justify-center text-white text-base ring-2 ring-white/60">👤</button>
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 overflow-y-auto pb-24">
-        <div className="px-4 py-5 max-w-lg mx-auto space-y-4">
-          <h1 className="text-xl font-black text-stone-800">ข้อมูลจัดส่งอาหาร</h1>
+      <div className="flex-1 overflow-y-auto pb-28">
+        <div className="px-4 pt-5 pb-2 max-w-lg mx-auto">
 
+          {/* Banner — ถ้ามีข้อมูลแล้ว แสดงปุ่มข้ามเข้าเมนูด่วน */}
+          {hasProfile && isEditMode && (
+            <button onClick={() => navigate('/order')}
+              className="w-full mb-4 py-3.5 rounded-2xl bg-emerald-600 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-300/40 active:scale-[0.98] transition-all">
+              ✅ ข้อมูลครบแล้ว — เข้าสู่เมนูอาหาร →
+            </button>
+          )}
+
+          <h1 className="text-xl font-black text-stone-800 mb-1">ข้อมูลที่อยู่</h1>
+          <p className="text-sm text-stone-500 mb-4">กรอกข้อมูลเพื่อให้เราส่งอาหารถึงบ้านคุณ</p>
+        </div>
+
+        <div className="px-4 max-w-lg mx-auto space-y-4">
           {/* Form card */}
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5 space-y-4">
 
             {/* ชื่อ */}
             <div>
-              <label className="text-sm font-bold text-stone-600 block mb-1.5">ชื่อ</label>
+              <label className="text-sm font-bold text-stone-600 block mb-1.5">
+                ชื่อ-นามสกุล <span className="text-red-500">*</span>
+              </label>
               <input type="text" value={form.name} onChange={e => setField('name', e.target.value)}
                 placeholder="ชื่อ-นามสกุล"
                 className="w-full border border-stone-300 rounded-xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none bg-stone-50" />
@@ -193,7 +241,9 @@ export default function ProfilePage() {
 
             {/* เบอร์โทรศัพท์ */}
             <div>
-              <label className="text-sm font-bold text-stone-600 block mb-1.5">เบอร์โทรศัพท์</label>
+              <label className="text-sm font-bold text-stone-600 block mb-1.5">
+                เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+              </label>
               <input type="tel" value={form.phone} onChange={e => setField('phone', e.target.value)}
                 placeholder="08x-xxx-xxxx"
                 className="w-full border border-stone-300 rounded-xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none bg-stone-50" />
@@ -201,7 +251,9 @@ export default function ProfilePage() {
 
             {/* ที่อยู่ */}
             <div>
-              <label className="text-sm font-bold text-stone-600 block mb-1.5">ที่อยู่ในการจัดส่งอาหาร</label>
+              <label className="text-sm font-bold text-stone-600 block mb-1.5">
+                ที่อยู่จัดส่ง <span className="text-red-500">*</span>
+              </label>
               <textarea value={form.address} onChange={e => setField('address', e.target.value)}
                 placeholder="บ้านเลขที่ / หมู่บ้าน / ซอย / ถนน / แขวง / เขต"
                 rows={3}
@@ -212,22 +264,22 @@ export default function ProfilePage() {
             <div>
               <label className="text-sm font-bold text-stone-600 block mb-1.5">หมายเหตุ (ถ้ามี)</label>
               <textarea value={form.note || ''} onChange={e => setField('note', e.target.value)}
-                placeholder="เช่น บ้านอยู่ปลายซอย..."
+                placeholder="เช่น บ้านอยู่ปลายซอย / สีบ้าน / สัญลักษณ์..."
                 rows={2}
                 className="w-full border border-stone-300 rounded-xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none resize-none bg-stone-50" />
             </div>
 
             {/* ปักหมุด */}
             <div>
-              <label className="text-sm font-bold text-stone-600 block mb-1.5">ปักหมุดที่อยู่</label>
+              <label className="text-sm font-bold text-stone-600 block mb-1.5">ปักหมุดที่อยู่ (ไม่บังคับ)</label>
               <button onClick={() => setShowMap(true)}
                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all ${form.location ? 'border-red-300 bg-red-50' : 'border-dashed border-stone-300 hover:border-red-300 hover:bg-red-50'}`}>
                 <span className="text-2xl">🗺️</span>
                 <div className="flex-1 text-left">
                   {form.location
                     ? <>
-                        <p className="text-sm font-bold text-red-800">{form.location[0].toFixed(7)}</p>
-                        <p className="text-sm font-bold text-red-800">{form.location[1].toFixed(7)}</p>
+                        <p className="text-sm font-bold text-red-800">{form.location[0].toFixed(5)}, {form.location[1].toFixed(5)}</p>
+                        <p className="text-[11px] text-red-600 mt-0.5">แตะเพื่อเปลี่ยนตำแหน่ง</p>
                       </>
                     : <p className="text-sm text-stone-500 font-bold">กดเพื่อปักหมุดบนแผนที่</p>
                   }
@@ -241,30 +293,25 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Warning */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex gap-3">
-            <span className="text-amber-500 text-lg flex-shrink-0">ℹ️</span>
-            <p className="text-sm text-amber-800 leading-relaxed">
-              กรุณาบันทึกทุกครั้งหลังแก้ไขข้อมูลจัดส่ง หรือ ปักหมุดที่อยู่ใหม่ เพื่อให้ข้อมูลอัปเดตในโปรไฟล์ของคุณ
-            </p>
-          </div>
-
-          {/* Save success */}
+          {/* Save success message */}
           {saved && (
             <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-center">
-              <span className="text-green-700 font-bold text-sm">✅ บันทึกข้อมูลเรียบร้อยแล้ว</span>
+              <span className="text-green-700 font-bold text-sm">✅ บันทึกแล้ว! กำลังเข้าสู่เมนู...</span>
             </div>
           )}
 
           {/* Buttons */}
-          <div className="flex gap-3 pb-2">
-            <button onClick={() => navigate('/order')}
-              className="flex-1 py-4 rounded-xl border-2 border-stone-300 text-stone-700 font-bold text-sm hover:bg-stone-100 transition-colors">
-              กลับหน้าแรก
+          <div className="space-y-3 pb-2">
+            {/* Save + เข้าเมนู */}
+            <button onClick={handleSave} disabled={saving}
+              className="w-full py-4 rounded-2xl bg-red-700 text-white font-black text-base hover:bg-red-800 active:scale-[0.98] transition-all shadow-lg shadow-red-300/40 disabled:opacity-60">
+              {saving ? '⏳ กำลังบันทึก...' : '💾 บันทึก & เข้าสู่เมนูอาหาร →'}
             </button>
-            <button onClick={handleSave}
-              className="flex-1 py-4 rounded-xl bg-red-700 text-white font-black text-sm hover:bg-red-800 active:scale-[0.98] transition-all shadow-lg shadow-red-300/40">
-              บันทึก
+
+            {/* ข้ามไปเลย (ไม่กรอก) */}
+            <button onClick={() => navigate('/order')}
+              className="w-full py-3 rounded-2xl border-2 border-stone-300 text-stone-500 font-bold text-sm hover:bg-stone-100 transition-colors">
+              ข้ามขั้นตอนนี้ — เข้าดูเมนูก่อน
             </button>
           </div>
         </div>

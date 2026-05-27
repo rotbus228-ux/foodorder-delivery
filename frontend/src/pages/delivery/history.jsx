@@ -204,7 +204,7 @@ export default function HistoryPage() {
         <button onClick={() => setShowContact(true)}
           className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-base active:scale-90">ℹ️</button>
         <button className="w-10 h-10 bg-white/40 rounded-full flex items-center justify-center text-white text-base ring-2 ring-white/60">🕐</button>
-        <button onClick={() => navigate('/profile')}
+        <button onClick={() => navigate('/', { state: { edit: true } })}
           className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-base active:scale-90">👤</button>
       </div>
 

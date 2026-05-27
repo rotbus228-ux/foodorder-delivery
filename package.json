@@ -1,9 +1,9 @@
 {
-  "name": "restaurant-qrmenu-server",
+  "name": "foodorder-delivery-server",
   "version": "1.0.0",
   "scripts": {
-    "build": "npm install --prefix backend",
-    "start": "node backend/server.js"
+    "build": "cd backend && npm install",
+    "start": "cd backend && node server.js"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -655,7 +655,7 @@ export default function DeliveryOrderPage() {
       {/* ── Header ── */}
       <div className="bg-red-900 px-4 py-3 flex items-center gap-2 flex-shrink-0">
         {/* Home/back button — circle "1" */}
-        <button onClick={() => navigate('/')}
+        <button onClick={() => navigate('/', { state: { edit: true } })}
           className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center text-white font-black text-sm flex-shrink-0 active:scale-90 transition-all">
           1
         </button>
@@ -671,7 +671,7 @@ export default function DeliveryOrderPage() {
           🕐
         </button>
         {/* 👤 Profile */}
-        <button onClick={() => navigate('/profile')}
+        <button onClick={() => navigate('/', { state: { edit: true } })}
           className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-base active:scale-90 transition-all">
           👤
         </button>
