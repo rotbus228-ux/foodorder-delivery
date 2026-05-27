@@ -1,4 +1,18 @@
-// Foodorder Delivery Backend — v3 (Dockerfile build)
+// Foodorder Delivery Backend — v4 (Nixpacks + error logging)
+console.log('[Boot] Node version:', process.version);
+console.log('[Boot] PORT env:', process.env.PORT);
+console.log('[Boot] NODE_ENV:', process.env.NODE_ENV);
+
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] uncaughtException:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] unhandledRejection:', reason);
+  process.exit(1);
+});
+
 require('dotenv').config();
 const express    = require('express');
 const http       = require('http');
