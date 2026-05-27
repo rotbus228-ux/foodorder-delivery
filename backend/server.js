@@ -9,8 +9,9 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
-  console.error('[FATAL] unhandledRejection:', reason);
-  process.exit(1);
+  // Log only — do NOT exit. Some modules (Supabase, etc.) may fire
+  // rejections that are harmless but would crash the server if we exit.
+  console.error('[WARN] unhandledRejection (non-fatal):', reason);
 });
 
 require('dotenv').config();
