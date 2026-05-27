@@ -8,20 +8,18 @@ const _BASE      = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const API_BASE   = `${_BASE}/api`
 const SOCKET_URL = _BASE
 
-/* ── Status config ─────────────────────────────────────────────── */
+/* ── Status config (3 ขั้นตอนหลัก + pending_payment) ──────────── */
 const STATUS_CONFIG = {
-  pending_payment:  { label: 'รอตรวจสลีป',   icon: '💳', color: 'bg-blue-100 text-blue-700   border-blue-200', pulse: true  },
-  pending:          { label: 'รอดำเนินการ',  icon: '🔔', color: 'bg-orange-100 text-orange-700 border-orange-200', pulse: true  },
-  preparing:        { label: 'กำลังปรุง',    icon: '🍳', color: 'bg-sky-100 text-sky-700       border-sky-200',    pulse: false },
-  out_for_delivery: { label: 'กำลังส่ง',     icon: '🛵', color: 'bg-violet-100 text-violet-700 border-violet-200', pulse: false },
-  delivered:        { label: 'ส่งแล้ว',      icon: '✅', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', pulse: false },
-  cancelled:        { label: 'ยกเลิก',       icon: '❌', color: 'bg-stone-100 text-stone-500   border-stone-200', pulse: false },
+  pending_payment:  { label: 'รอตรวจสลีป',   icon: '💳', color: 'bg-blue-100 text-blue-700     border-blue-200',    pulse: true  },
+  pending:          { label: 'สั่งซื้อแล้ว',  icon: '🔔', color: 'bg-orange-100 text-orange-700 border-orange-200',  pulse: true  },
+  out_for_delivery: { label: 'กำลังไปส่ง',    icon: '🛵', color: 'bg-violet-100 text-violet-700 border-violet-200',  pulse: true  },
+  delivered:        { label: 'เสร็จสิ้น',     icon: '✅', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', pulse: false },
+  cancelled:        { label: 'ยกเลิก',        icon: '❌', color: 'bg-stone-100 text-stone-500   border-stone-200',   pulse: false },
 }
 
 const NEXT_STATUS = {
   pending_payment:  [{ next: 'pending',          label: '✅ ยืนยันสลีป → รับออเดอร์', primary: true  }, { next: 'cancelled', label: '❌ ปฏิเสธ', primary: false }],
-  pending:          [{ next: 'preparing',        label: '🍳 เริ่มปรุงอาหาร',          primary: true  }, { next: 'cancelled', label: '❌ ยกเลิก', primary: false }],
-  preparing:        [{ next: 'out_for_delivery', label: '🛵 ส่งออกไปแล้ว',            primary: true  }],
+  pending:          [{ next: 'out_for_delivery', label: '🛵 ส่งออกไปแล้ว',            primary: true  }, { next: 'cancelled', label: '❌ ยกเลิก', primary: false }],
   out_for_delivery: [{ next: 'delivered',        label: '✅ ส่งถึงแล้ว',               primary: true  }],
   delivered:        [],
   cancelled:        [],
@@ -344,7 +342,7 @@ export default function AdminDeliveryDashboard() {
   }, [navigate])
 
   /* ── Filtered orders ── */
-  const ACTIVE_STATUSES = ['pending_payment', 'pending', 'preparing', 'out_for_delivery']
+  const ACTIVE_STATUSES = ['pending_payment', 'pending', 'out_for_delivery']
   const displayed = orders.filter(o => {
     if (filterStatus === 'active') return ACTIVE_STATUSES.includes(o.status)
     if (filterStatus === 'all')    return true
@@ -416,8 +414,7 @@ export default function AdminDeliveryDashboard() {
             { key: 'active',          label: '🔥 กำลังดำเนินการ' },
             { key: 'all',             label: '📋 ทั้งหมด' },
             { key: 'pending_payment', label: '💳 รอสลีป' },
-            { key: 'pending',         label: '🔔 รอปรุง' },
-            { key: 'preparing',       label: '🍳 กำลังปรุง' },
+            { key: 'pending',         label: '🔔 สั่งซื้อแล้ว' },
             { key: 'out_for_delivery',label: '🛵 กำลังส่ง' },
             { key: 'delivered',       label: '✅ ส่งแล้ว' },
             { key: 'cancelled',       label: '❌ ยกเลิก' },

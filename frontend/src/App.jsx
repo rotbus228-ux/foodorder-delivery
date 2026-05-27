@@ -7,6 +7,7 @@ import AdminDeliveryDashboard from './pages/admin/dashboard'
 import MenuManage          from './pages/admin/menu-manage'
 import AdminLoginPage      from './pages/admin/login'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
+import ProfilePage         from './pages/delivery/profile'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/order"          element={<DeliveryOrderPage />} />
         <Route path="/track/:orderId" element={<TrackPage />} />
         <Route path="/history"        element={<HistoryPage />} />
+        <Route path="/profile"        element={<ProfilePage />} />
 
         {/* ── Admin Login ── */}
         <Route path="/admin/login" element={<AdminLoginPage />} />

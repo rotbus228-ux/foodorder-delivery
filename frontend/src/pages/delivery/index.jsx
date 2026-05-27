@@ -209,7 +209,7 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
         <div className="sm:hidden flex justify-center pt-3"><div className="w-12 h-1.5 bg-stone-300 rounded-full" /></div>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-4 flex items-center justify-between">
+        <div className="bg-red-900 px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-black text-white flex items-center gap-2">🛒 ชำระเงิน</h2>
           {!sending && (
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
@@ -285,12 +285,12 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
                 </button>
                 {payMethod === 'cash' ? (
                   <button onClick={handleSubmit} disabled={sending}
-                    className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-sm shadow-lg shadow-blue-300/50 active:scale-95 hover:shadow-xl transition-all disabled:opacity-60">
+                    className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">
                     {sending ? '⏳ กำลังส่ง...' : '✅ ยืนยันสั่งเลย'}
                   </button>
                 ) : (
                   <button onClick={() => setStep(2)}
-                    className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-sm shadow-lg shadow-blue-300/50 active:scale-95 hover:shadow-xl transition-all">
+                    className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all">
                     ถัดไป →
                   </button>
                 )}
@@ -352,7 +352,7 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
                   ← ย้อนกลับ
                 </button>
                 <button onClick={handleSubmit} disabled={sending || !slipFile}
-                  className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-sm shadow-lg shadow-blue-300/50 active:scale-95 hover:shadow-xl transition-all disabled:opacity-60">
+                  className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">
                   {sending ? '⏳ กำลังส่ง...' : '✅ ส่งออเดอร์'}
                 </button>
               </div>
@@ -391,7 +391,7 @@ function SuccessModal({ order, onClose }) {
             สั่งต่อ
           </button>
           <button onClick={() => navigate(`/track/${order.id}`)}
-            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-sm shadow-lg shadow-blue-300/40 hover:shadow-xl transition-all active:scale-95">
+            className="flex-1 py-3 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all">
             📍 ติดตามออเดอร์
           </button>
         </div>
@@ -488,13 +488,44 @@ function LocationPickerModal({ initialPos, onConfirm, onClose }) {
   )
 }
 
+/* ── Contact Modal ───────────────────────────────────────────────── */
+function ContactModal({ settings, onClose }) {
+  const line  = settings?.contact_line  || '@artiwara_lb'
+  const phone = settings?.contact_phone || '0968931933'
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl w-full max-w-xs">
+        <div className="bg-red-900 px-5 py-4 flex items-center justify-between">
+          <h2 className="text-white font-black text-base">ติดต่อร้านค้า</h2>
+          <button onClick={onClose} className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-white text-sm font-bold">✕</button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-3 py-2">
+            <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white font-black text-xs">LINE</div>
+            <span className="text-base font-bold text-stone-800">{line}</span>
+          </div>
+          <hr className="border-stone-100" />
+          <div className="flex items-center gap-3 py-2">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white text-xl">📞</div>
+            <a href={`tel:${phone}`} className="text-base font-bold text-stone-800">{phone}</a>
+          </div>
+        </div>
+        <div className="px-5 pb-5">
+          <button onClick={onClose} className="w-full py-3 rounded-xl border-2 border-stone-200 font-bold text-stone-700">ปิด</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ══════════════════════════════════════════════════════════════════
    Main Delivery Order Page
 ══════════════════════════════════════════════════════════════════ */
 export default function DeliveryOrderPage() {
   const navigate = useNavigate()
 
-  // ── ข้อมูลลูกค้า ──
+  // ── ข้อมูลลูกค้า (โหลดจาก localStorage) ──
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', address: '', note: '', location: null })
   const customerValid = customerInfo.name.trim() && customerInfo.phone.trim() && customerInfo.address.trim()
 
@@ -502,30 +533,37 @@ export default function DeliveryOrderPage() {
   const [showMapPicker, setShowMapPicker] = useState(false)
 
   // ── เมนู ──
-  const [categories,   setCategories]   = useState([])
-  const [menus,        setMenus]        = useState([])
-  const [settings,     setSettings]     = useState({})
+  const [categories,     setCategories]     = useState([])
+  const [menus,          setMenus]          = useState([])
+  const [settings,       setSettings]       = useState({})
   const [restaurantName, setRestaurantName] = useState('ร้านอาหาร')
-  const [menuLoading,  setMenuLoading]  = useState(true)
-  const [activeCat,    setActiveCat]    = useState(0)
-  const [viewMode,     setViewMode]     = useState('list')
-  const [optionMenu,   setOptionMenu]   = useState(null)
+  const [menuLoading,    setMenuLoading]    = useState(true)
+  const [activeCat,      setActiveCat]      = useState(0)
+  const [viewMode,       setViewMode]       = useState('list')
+  const [optionMenu,     setOptionMenu]     = useState(null)
 
   // ── ตะกร้า ──
-  const [cart,         setCart]         = useState([])
-  const cartCount   = cart.reduce((s, i) => s + i.quantity, 0)
-  const cartTotal   = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
+  const [cart,      setCart]      = useState([])
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0)
+  const cartTotal = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
 
-  // ── Tab ──
-  const [activeTab, setActiveTab] = useState('info')  // 'info' | 'menu' | 'cart'
+  // ── Tab (เหลือแค่ menu | cart) ──
+  const [activeTab, setActiveTab] = useState('menu')
 
   // ── Modals ──
   const [showCheckout, setShowCheckout] = useState(false)
   const [successOrder, setSuccessOrder] = useState(null)
+  const [showContact,  setShowContact]  = useState(false)
 
   // ── Socket ──
   const [connected, setConnected] = useState(false)
   const socketRef  = useRef(null)
+
+  // ── โหลด profile จาก localStorage ──
+  useEffect(() => {
+    const saved = localStorage.getItem('delivery_profile')
+    if (saved) { try { const p = JSON.parse(saved); setCustomerInfo(p) } catch {} }
+  }, [])
 
   useEffect(() => {
     const socket = io(SOCKET_URL, { transports: ['websocket'] })
@@ -593,6 +631,7 @@ export default function DeliveryOrderPage() {
     <div className="min-h-screen bg-stone-50 flex flex-col">
 
       {/* ── Modals ── */}
+      {showContact && <ContactModal settings={settings} onClose={() => setShowContact(false)} />}
       {optionMenu && (
         <OptionsModal menu={optionMenu} onConfirm={(opts, note) => addCartItem(optionMenu.id, opts, note)} onClose={() => setOptionMenu(null)} />
       )}
@@ -603,7 +642,7 @@ export default function DeliveryOrderPage() {
         />
       )}
       {successOrder && (
-        <SuccessModal order={successOrder} onClose={() => { setSuccessOrder(null); setActiveTab('info') }} />
+        <SuccessModal order={successOrder} onClose={() => { setSuccessOrder(null); setActiveTab('menu') }} />
       )}
       {showMapPicker && (
         <LocationPickerModal
@@ -614,100 +653,41 @@ export default function DeliveryOrderPage() {
       )}
 
       {/* ── Header ── */}
-      <div className="relative bg-gradient-to-br from-blue-700 via-sky-600 to-cyan-500 text-white overflow-hidden flex-shrink-0">
-        <div className="absolute -top-12 -right-12 w-40 h-40 bg-blue-300/20 rounded-full blur-2xl" />
-        <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-cyan-400/30 rounded-full blur-2xl" />
-        <div className="relative px-4 pt-4 pb-4">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="flex-shrink-0 w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl flex items-center justify-center transition-colors active:scale-90">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-            </button>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-black tracking-tight drop-shadow truncate">{restaurantName}</h1>
-              <p className="text-xs text-sky-50/90">🛵 Delivery · ส่งถึงบ้าน</p>
-            </div>
-            <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-2 py-1 rounded-full ring-1 ring-white/20 flex-shrink-0">
-              <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-300 animate-pulse' : 'bg-white/40'}`} />
-              <span className="text-[10px] text-white/90 font-bold">{connected ? 'ออนไลน์' : 'ออฟไลน์'}</span>
-            </div>
-          </div>
+      <div className="bg-red-900 px-4 py-3 flex items-center gap-2 flex-shrink-0">
+        {/* Home/back button — circle "1" */}
+        <button onClick={() => navigate('/')}
+          className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center text-white font-black text-sm flex-shrink-0 active:scale-90 transition-all">
+          1
+        </button>
+        <div className="flex-1" />
+        {/* ℹ️ Contact */}
+        <button onClick={() => setShowContact(true)}
+          className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-base active:scale-90 transition-all">
+          ℹ️
+        </button>
+        {/* ⏱ History */}
+        <button onClick={() => navigate('/history')}
+          className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-base active:scale-90 transition-all">
+          🕐
+        </button>
+        {/* 👤 Profile */}
+        <button onClick={() => navigate('/profile')}
+          className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-base active:scale-90 transition-all">
+          👤
+        </button>
+      </div>
+
+      {/* Restaurant name + status strip */}
+      <div className="bg-red-800 px-4 py-2 flex items-center justify-between">
+        <span className="text-white/90 font-bold text-sm truncate">{restaurantName}</span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-300 animate-pulse' : 'bg-white/40'}`} />
+          <span className="text-[10px] text-white/80 font-bold">{connected ? 'ออนไลน์' : 'ออฟไลน์'}</span>
         </div>
       </div>
 
       {/* ── Tab Content ── */}
       <div className="flex-1 overflow-y-auto pb-20">
-
-        {/* ─── TAB: ข้อมูลส่งของ ─── */}
-        {activeTab === 'info' && (
-          <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
-            <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5 space-y-4">
-              <h2 className="font-black text-stone-800 flex items-center gap-2 text-base"><span>📋</span> ข้อมูลการจัดส่ง</h2>
-
-              {[
-                { key: 'name',    label: 'ชื่อ-นามสกุล',       placeholder: 'สมชาย ใจดี',              icon: '👤', type: 'text' },
-                { key: 'phone',   label: 'เบอร์โทรศัพท์',       placeholder: '08x-xxx-xxxx',             icon: '📞', type: 'tel'  },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-xs font-black text-stone-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                    <span>{f.icon}</span> {f.label} <span className="text-rose-500">*</span>
-                  </label>
-                  <input type={f.type} value={customerInfo[f.key]}
-                    onChange={e => setCustomerInfo(prev => ({ ...prev, [f.key]: e.target.value }))}
-                    placeholder={f.placeholder}
-                    className="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 focus:outline-none transition-all" />
-                </div>
-              ))}
-
-              <div>
-                <label className="text-xs font-black text-stone-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                  <span>📍</span> ที่อยู่จัดส่ง <span className="text-rose-500">*</span>
-                </label>
-                <textarea value={customerInfo.address}
-                  onChange={e => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="บ้านเลขที่ / หมู่บ้าน / ซอย / ถนน / แขวง / เขต"
-                  rows={3}
-                  className="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 focus:outline-none resize-none transition-all" />
-              </div>
-
-              <div>
-                <label className="text-xs font-black text-stone-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                  <span>📝</span> หมายเหตุ (ถ้ามี)
-                </label>
-                <textarea value={customerInfo.note}
-                  onChange={e => setCustomerInfo(prev => ({ ...prev, note: e.target.value }))}
-                  placeholder="เช่น บ้านอยู่ปลายซอย หลังรั้วสีแดง..."
-                  rows={2}
-                  className="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 focus:outline-none resize-none transition-all" />
-              </div>
-
-              {/* ── Location Picker ── */}
-              <div>
-                <label className="text-xs font-black text-stone-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                  <span>🗺️</span> ปักหมุดตำแหน่ง (ไม่บังคับ)
-                </label>
-                <button onClick={() => setShowMapPicker(true)}
-                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-all ${customerInfo.location ? 'border-blue-400 bg-sky-50 text-blue-700' : 'border-dashed border-stone-300 text-stone-500 hover:border-blue-400 hover:bg-sky-50 hover:text-blue-600'}`}>
-                  <span className="text-xl">{customerInfo.location ? '📌' : '🗺️'}</span>
-                  <div className="flex-1 text-left">
-                    {customerInfo.location
-                      ? <><p className="text-sm font-black">ปักหมุดแล้ว ✓</p><p className="text-[11px] font-mono opacity-70">{customerInfo.location[0].toFixed(5)}, {customerInfo.location[1].toFixed(5)}</p></>
-                      : <p className="text-sm font-bold">กดเพื่อปักหมุดบนแผนที่</p>
-                    }
-                  </div>
-                  {customerInfo.location && (
-                    <button onClick={e => { e.stopPropagation(); setCustomerInfo(p => ({ ...p, location: null })) }}
-                      className="w-6 h-6 bg-stone-200 hover:bg-rose-100 hover:text-rose-500 rounded-full flex items-center justify-center text-stone-400 text-xs transition-colors">✕</button>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <button onClick={() => setActiveTab('menu')} disabled={!customerValid}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-base shadow-xl shadow-blue-300/40 hover:shadow-2xl active:scale-[0.98] transition-all disabled:opacity-40 disabled:scale-100">
-              ถัดไป: เลือกเมนู →
-            </button>
-          </div>
-        )}
 
         {/* ─── TAB: เมนู ─── */}
         {activeTab === 'menu' && (
@@ -771,7 +751,7 @@ export default function DeliveryOrderPage() {
                               const opts = Array.isArray(menu.options) ? menu.options : []
                               if (opts.length === 0) addCartItem(menu.id, [], '')
                               else setOptionMenu(menu)
-                            }} className="w-8 h-8 bg-gradient-to-br from-blue-600 to-cyan-500 text-white rounded-full flex items-center justify-center text-xl font-black shadow-md shadow-blue-200 active:scale-90 hover:scale-110 transition-all ring-2 ring-white">+</button>
+                            }} className="w-8 h-8 bg-red-700 hover:bg-red-800 text-white rounded-full flex items-center justify-center text-xl font-black shadow-md active:scale-90 hover:scale-110 transition-all ring-2 ring-white">+</button>
                           )}
                         </div>
                       </div>
@@ -793,7 +773,7 @@ export default function DeliveryOrderPage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                         {!isAvail && <span className="absolute top-2 left-2 bg-stone-800/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full">🚫 หมด</span>}
                         {qty > 0 && isAvail && <span className="absolute top-2 right-2 bg-white/95 text-blue-600 text-xs font-black px-2 py-0.5 rounded-full shadow-md ring-1 ring-blue-200">×{qty}</span>}
-                        {isAvail && <button onClick={() => { const opts = Array.isArray(menu.options) ? menu.options : []; if (opts.length === 0) addCartItem(menu.id, [], ''); else setOptionMenu(menu) }} className="absolute bottom-2 right-2 w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 text-white rounded-full flex items-center justify-center text-2xl font-black shadow-lg active:scale-90 hover:scale-110 transition-transform ring-2 ring-white/30">+</button>}
+                        {isAvail && <button onClick={() => { const opts = Array.isArray(menu.options) ? menu.options : []; if (opts.length === 0) addCartItem(menu.id, [], ''); else setOptionMenu(menu) }} className="absolute bottom-2 right-2 w-10 h-10 bg-red-700 hover:bg-red-800 text-white rounded-full flex items-center justify-center text-2xl font-black shadow-lg active:scale-90 hover:scale-110 transition-transform ring-2 ring-white/30">+</button>}
                       </div>
                       <div className="p-3">
                         {menu.category_name && <span className={`inline-block text-[8px] font-black px-1.5 py-0.5 rounded-full mb-1.5 ${cc.bg} ${cc.text}`}>{menu.category_name}</span>}
@@ -860,15 +840,15 @@ export default function DeliveryOrderPage() {
                 {!customerValid && (
                   <div className="bg-amber-50 rounded-2xl px-4 py-3 ring-1 ring-amber-100 flex items-center gap-3">
                     <span className="text-2xl">⚠️</span>
-                    <div>
-                      <p className="text-sm font-bold text-amber-800">กรุณากรอกข้อมูลส่งของก่อน</p>
-                      <button onClick={() => setActiveTab('info')} className="text-xs text-amber-600 font-bold underline">ไปกรอกข้อมูล →</button>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-amber-800">ยังไม่ได้กรอกข้อมูลจัดส่ง</p>
+                      <button onClick={() => navigate('/profile')} className="text-xs text-amber-700 font-black underline">กดที่นี่เพื่อกรอกข้อมูล →</button>
                     </div>
                   </div>
                 )}
 
                 <button onClick={() => setShowCheckout(true)} disabled={!customerValid}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-base shadow-xl shadow-blue-300/40 hover:shadow-2xl active:scale-[0.98] transition-all disabled:opacity-40">
+                  className="w-full py-4 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-base shadow-xl shadow-red-300/40 active:scale-[0.98] transition-all disabled:opacity-40">
                   ✅ สั่งอาหาร · ฿{(cartTotal + (Number(settings.delivery_fee) || 30)).toLocaleString()}
                 </button>
               </>
@@ -881,39 +861,44 @@ export default function DeliveryOrderPage() {
       {activeTab === 'menu' && cartCount > 0 && (
         <div className="fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 z-30">
           <button onClick={() => setActiveTab('cart')}
-            className="flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black rounded-full shadow-2xl shadow-blue-400/50 hover:shadow-blue-500/60 active:scale-95 transition-all ring-2 ring-white"
+            className="flex items-center gap-3 px-6 py-3.5 bg-red-700 hover:bg-red-800 text-white font-black rounded-full shadow-2xl shadow-red-400/50 active:scale-95 transition-all ring-2 ring-white"
             style={{ animation: 'slideUp 0.3s ease-out' }}>
             <span>🛒 ดูตะกร้า</span>
-            <span className="w-6 h-6 bg-white text-sky-500 rounded-full text-xs font-black flex items-center justify-center">{cartCount}</span>
+            <span className="w-6 h-6 bg-white text-red-600 rounded-full text-xs font-black flex items-center justify-center">{cartCount}</span>
             <span className="font-bold text-white/90 text-sm">฿{cartTotal.toLocaleString()}</span>
           </button>
         </div>
       )}
 
-      {/* ── Bottom Nav Bar ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-xl border-t border-stone-200 shadow-lg">
-        <div className="flex items-center h-16 max-w-lg mx-auto px-2">
-          {[
-            { key: 'info',  icon: '📋', label: 'ข้อมูล',  badge: null,             action: () => setActiveTab('info')  },
-            { key: 'menu',  icon: '🍽️', label: 'เมนู',    badge: null,             action: () => setActiveTab('menu')  },
-            { key: 'cart',  icon: '🛒', label: 'ตะกร้า',  badge: cartCount || null, action: () => setActiveTab('cart')  },
-            { key: 'hist',  icon: '📦', label: 'ประวัติ', badge: null,             action: () => navigate('/history') },
-          ].map(item => (
-            <button key={item.key} onClick={item.action}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-all active:scale-90
-                ${activeTab === item.key ? 'text-blue-600' : 'text-stone-400 hover:text-stone-600'}`}>
-              <span className={`text-xl transition-transform ${activeTab === item.key ? 'scale-110' : ''}`}>{item.icon}</span>
-              <span className={`text-[10px] font-black ${activeTab === item.key ? 'text-blue-600' : 'text-stone-400'}`}>{item.label}</span>
-              {item.badge && (
-                <span className="absolute top-1.5 right-[calc(50%-18px)] w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-md">
-                  {item.badge > 9 ? '9+' : item.badge}
-                </span>
-              )}
-              {activeTab === item.key && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-blue-500 rounded-full" />
-              )}
-            </button>
-          ))}
+      {/* ── Bottom Nav Bar (2 tabs only) ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-stone-200 shadow-lg">
+        <div className="flex items-center h-16 max-w-lg mx-auto">
+          {/* เมนูอาหาร */}
+          <button onClick={() => setActiveTab('menu')}
+            className={`relative flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all active:scale-90
+              ${activeTab === 'menu' ? 'text-red-700' : 'text-stone-400 hover:text-stone-600'}`}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h10"/>
+            </svg>
+            <span className="text-[10px] font-bold">เมนูอาหาร</span>
+            {activeTab === 'menu' && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-red-600 rounded-full" />}
+          </button>
+
+          {/* ตะกร้า */}
+          <button onClick={() => setActiveTab('cart')}
+            className={`relative flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all active:scale-90
+              ${activeTab === 'cart' ? 'text-red-700' : 'text-stone-400 hover:text-stone-600'}`}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <span className="text-[10px] font-bold">ตะกร้า</span>
+            {cartCount > 0 && (
+              <span className="absolute top-2 right-[calc(50%-16px)] w-4 h-4 bg-red-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+            {activeTab === 'cart' && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-red-600 rounded-full" />}
+          </button>
         </div>
       </div>
 
