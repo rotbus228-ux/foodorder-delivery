@@ -27,6 +27,11 @@ const authRoutes = require('./routes/auth');
 const app    = express();
 const server = http.createServer(app);
 
+server.on('error', (err) => {
+  console.error('[FATAL] server.on(error):', err.code, err.message);
+  process.exit(1);
+});
+
 /* ── CORS: allow localhost + all *.vercel.app + FRONTEND_URL env ── */
 const allowOrigin = (origin, cb) => {
   if (!origin) return cb(null, true);
@@ -83,11 +88,17 @@ app.use((err, req, res, next) => res.status(err.status || 500).json({ success: f
 /* ── Start ── */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, async () => {
-  console.log(`🚀  Server   → http://localhost:${PORT}`);
-  console.log(`📡  Socket.io ready`);
-  console.log(`🌐  CORS     → *.vercel.app + ${process.env.FRONTEND_URL || 'localhost'}`);
+  try {
+    console.log(`🚀  Server   → http://localhost:${PORT}`);
+    console.log(`📡  Socket.io ready`);
+    console.log(`🌐  CORS     → *.vercel.app + ${process.env.FRONTEND_URL || 'localhost'}`);
 
-  const { error } = await supabase.from('settings').select('count', { count: 'exact', head: true });
-  if (error) console.error(`❌  Supabase → FAILED: ${error.message}`);
-  else console.log(`✅  Supabase → connected`);
+    const { error } = await supabase.from('settings').select('count', { count: 'exact', head: true });
+    if (error) console.error(`❌  Supabase → FAILED: ${error.message}`);
+    else console.log(`✅  Supabase → connected`);
+  } catch (err) {
+    console.error('[FATAL] listen callback threw:', err.message);
+    console.error(err.stack);
+    process.exit(1);
+  }
 });
