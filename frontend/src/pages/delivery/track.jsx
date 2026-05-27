@@ -9,24 +9,22 @@ const SOCKET_URL = _BASE
 
 /* ── Status config ─────────────────────────────────────────────── */
 const CASH_STEPS = [
-  { key: 'pending',          icon: '📋', emoji: '📋', label: 'รับออเดอร์',   desc: 'ร้านได้รับออเดอร์แล้ว',            color: 'from-orange-400 to-amber-400'   },
-  { key: 'preparing',        icon: '🍳', emoji: '🍳', label: 'กำลังปรุง',    desc: 'ห้องครัวกำลังเตรียมอาหารให้คุณ',   color: 'from-sky-400    to-cyan-400'    },
-  { key: 'out_for_delivery', icon: '🛵', emoji: '🛵', label: 'กำลังส่ง',    desc: 'ไรเดอร์กำลังนำอาหารมาหาคุณแล้ว!', color: 'from-violet-500 to-purple-400'  },
-  { key: 'delivered',        icon: '✅', emoji: '✅', label: 'ส่งแล้ว!',     desc: 'ได้รับอาหารเรียบร้อย ขอบคุณครับ', color: 'from-emerald-500 to-green-400'  },
+  { key: 'pending',          icon: '🔔', emoji: '🔔', label: 'สั่งซื้อแล้ว',  desc: 'ร้านได้รับออเดอร์แล้ว',            color: 'from-orange-400 to-amber-400'   },
+  { key: 'out_for_delivery', icon: '🛵', emoji: '🛵', label: 'กำลังไปส่ง',   desc: 'ไรเดอร์กำลังนำอาหารมาหาคุณแล้ว!', color: 'from-violet-500 to-purple-400'  },
+  { key: 'delivered',        icon: '✅', emoji: '✅', label: 'เสร็จสิ้น',     desc: 'ได้รับอาหารเรียบร้อย ขอบคุณครับ', color: 'from-emerald-500 to-green-400'  },
 ]
 
 const TRANSFER_STEPS = [
   { key: 'pending_payment',  icon: '💳', emoji: '💳', label: 'รอตรวจสลีป',  desc: 'กำลังตรวจสอบการโอนเงิน',           color: 'from-blue-400   to-indigo-400'  },
-  { key: 'pending',          icon: '📋', emoji: '📋', label: 'รับออเดอร์',   desc: 'ยืนยันการชำระแล้ว รอปรุงอาหาร',   color: 'from-orange-400 to-amber-400'   },
-  { key: 'preparing',        icon: '🍳', emoji: '🍳', label: 'กำลังปรุง',    desc: 'ห้องครัวกำลังเตรียมอาหารให้คุณ',   color: 'from-sky-400    to-cyan-400'    },
-  { key: 'out_for_delivery', icon: '🛵', emoji: '🛵', label: 'กำลังส่ง',    desc: 'ไรเดอร์กำลังนำอาหารมาหาคุณแล้ว!', color: 'from-violet-500 to-purple-400'  },
-  { key: 'delivered',        icon: '✅', emoji: '✅', label: 'ส่งแล้ว!',     desc: 'ได้รับอาหารเรียบร้อย ขอบคุณครับ', color: 'from-emerald-500 to-green-400'  },
+  { key: 'pending',          icon: '🔔', emoji: '🔔', label: 'สั่งซื้อแล้ว', desc: 'ยืนยันการชำระแล้ว กำลังดำเนินการ',  color: 'from-orange-400 to-amber-400'   },
+  { key: 'out_for_delivery', icon: '🛵', emoji: '🛵', label: 'กำลังไปส่ง',   desc: 'ไรเดอร์กำลังนำอาหารมาหาคุณแล้ว!', color: 'from-violet-500 to-purple-400'  },
+  { key: 'delivered',        icon: '✅', emoji: '✅', label: 'เสร็จสิ้น',     desc: 'ได้รับอาหารเรียบร้อย ขอบคุณครับ', color: 'from-emerald-500 to-green-400'  },
 ]
 
 const STATUS_GRADIENT = {
   pending_payment:  'from-blue-600 via-indigo-500 to-blue-700',
-  pending:          'from-amber-500 via-orange-500 to-rose-500',
-  preparing:        'from-sky-500  via-cyan-500   to-blue-500',
+  pending:          'from-red-800  via-red-700    to-rose-700',
+  preparing:        'from-red-800  via-red-700    to-rose-700',
   out_for_delivery: 'from-violet-600 via-purple-500 to-fuchsia-600',
   delivered:        'from-emerald-500 via-green-500 to-teal-500',
   cancelled:        'from-stone-500 via-slate-500 to-stone-600',
@@ -267,7 +265,7 @@ export default function TrackPage() {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="w-14 h-14 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-14 h-14 border-4 border-red-700 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-stone-500 font-bold text-sm">กำลังโหลด...</p>
         </div>
       </div>
@@ -279,7 +277,7 @@ export default function TrackPage() {
         <div className="text-center space-y-4 max-w-xs">
           <div className="text-6xl">😕</div>
           <p className="text-stone-700 font-bold text-lg">{error || 'ไม่พบออเดอร์'}</p>
-          <button onClick={() => navigate('/')} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-colors active:scale-95">
+          <button onClick={() => navigate('/')} className="px-6 py-3 bg-red-700 text-white rounded-2xl font-bold text-sm hover:bg-red-800 transition-colors active:scale-95">
             กลับหน้าหลัก
           </button>
         </div>
@@ -311,10 +309,8 @@ export default function TrackPage() {
           {/* Top bar */}
           <div className="flex items-center justify-between mb-4">
             <button onClick={() => navigate(-1)}
-              className="w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl flex items-center justify-center transition-colors active:scale-90">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
+              className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl flex items-center justify-center font-black text-white text-base transition-colors active:scale-90">
+              1
             </button>
             <div className="flex items-center gap-2">
               {justUpdated && (
@@ -393,7 +389,7 @@ export default function TrackPage() {
             <h3 className="font-black text-stone-800 text-sm flex items-center gap-2">
               <span>📦</span> รายการอาหาร ({(order.items || []).length} รายการ)
             </h3>
-            <span className="font-black text-blue-600">฿{Number(order.total_price).toLocaleString()}</span>
+            <span className="font-black text-red-700">฿{Number(order.total_price).toLocaleString()}</span>
           </button>
 
           <div className="divide-y divide-stone-50">
@@ -402,7 +398,7 @@ export default function TrackPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-stone-800">{item.name}</p>
                   {Array.isArray(item.options) && item.options.length > 0 && (
-                    <p className="text-[11px] text-blue-600 font-semibold mt-0.5">
+                    <p className="text-[11px] text-red-600 font-semibold mt-0.5">
                       {item.options.map(o => o.label || o.name).join(', ')}
                     </p>
                   )}
@@ -425,7 +421,7 @@ export default function TrackPage() {
             </div>
             <div className="flex justify-between font-black text-base text-stone-900 pt-1.5 border-t border-stone-200">
               <span>ยอดรวม</span>
-              <span className="text-blue-600">฿{Number(order.total_price).toLocaleString()}</span>
+              <span className="text-red-700">฿{Number(order.total_price).toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -477,7 +473,7 @@ export default function TrackPage() {
             📦 ดูออเดอร์อื่น
           </button>
           <button onClick={() => navigate('/order')}
-            className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-sm shadow-xl shadow-blue-300/40 hover:shadow-2xl active:scale-[0.98] transition-all">
+            className="flex-1 py-3.5 rounded-2xl bg-red-700 text-white font-black text-sm shadow-xl shadow-red-300/40 hover:bg-red-800 hover:shadow-2xl active:scale-[0.98] transition-all">
             🛒 สั่งใหม่
           </button>
         </div>
