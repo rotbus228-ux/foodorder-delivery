@@ -156,18 +156,6 @@ export default function HistoryPage() {
   const [showContact, setShowContact] = useState(false)
   const [settings,    setSettings]    = useState({})
 
-  /* โหลดเบอร์โทรจาก profile อัตโนมัติ */
-  useEffect(() => {
-    const saved = localStorage.getItem('delivery_profile')
-    if (saved) {
-      try {
-        const p = JSON.parse(saved)
-        if (p.phone) { setPhone(p.phone) }
-      } catch {}
-    }
-    axios.get(`${API_BASE}/settings`).then(r => setSettings(r.data?.data || {})).catch(() => {})
-  }, [])
-
   const search = async (phoneOverride) => {
     const p = (phoneOverride || phone).trim()
     if (!p) return
@@ -181,9 +169,19 @@ export default function HistoryPage() {
     } finally { setLoading(false) }
   }
 
-  /* auto search ถ้ามีเบอร์จาก profile */
+  /* โหลดเบอร์โทรจาก profile + auto-search ทันที */
   useEffect(() => {
-    if (phone) search(phone)
+    axios.get(`${API_BASE}/settings`).then(r => setSettings(r.data?.data || {})).catch(() => {})
+    const saved = localStorage.getItem('delivery_profile')
+    if (saved) {
+      try {
+        const p = JSON.parse(saved)
+        if (p.phone) {
+          setPhone(p.phone)
+          search(p.phone)   // ส่งเบอร์โดยตรง ไม่รอ state update
+        }
+      } catch {}
+    }
   }, []) // eslint-disable-line
 
   const activeOrders = orders.filter(o => !['delivered', 'cancelled'].includes(o.status))
