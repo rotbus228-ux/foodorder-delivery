@@ -5,10 +5,11 @@ const delivery   = require('../controllers/deliveryController');
 // getOrdersByPhone destructured separately for clarity
 const menuController     = require('../controllers/menuController');
 const settingsController = require('../controllers/settingsController');
-const { upload, uploadMenuImage } = require('../controllers/uploadController');
+const { upload, uploadMenuImage, uploadQrImage } = require('../controllers/uploadController');
 
-// ─── Upload: menu image (admin) ───────────────────────────────────────────────
+// ─── Upload ───────────────────────────────────────────────────────────────────
 router.post('/upload/menu-image', adminAuth, upload.single('file'), uploadMenuImage);
+router.post('/upload/qr-image',   adminAuth, upload.single('file'), uploadQrImage);
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 router.get('/settings',      settingsController.getSettings);

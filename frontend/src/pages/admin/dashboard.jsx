@@ -189,12 +189,14 @@ function SettingsModal({ onClose }) {
     { key: 'payment_bank_name',      label: '🏦 ชื่อธนาคาร',       placeholder: 'ธนาคารกสิกรไทย',  type: 'text'   },
     { key: 'payment_account_number', label: '💳 เลขบัญชี',         placeholder: '000-0-00000-0',   type: 'text'   },
     { key: 'payment_account_name',   label: '👤 ชื่อบัญชี',        placeholder: 'นาย...',           type: 'text'   },
-    { key: 'payment_qr_url',         label: '📷 QR Code URL',       placeholder: 'https://...',      type: 'url'    },
   ]
-  const [values,  setValues]  = useState({})
-  const [loadingS, setLoadingS] = useState(true)
-  const [saving,  setSaving]  = useState(false)
-  const [saved,   setSaved]   = useState(false)
+  const [values,     setValues]     = useState({})
+  const [loadingS,   setLoadingS]   = useState(true)
+  const [saving,     setSaving]     = useState(false)
+  const [saved,      setSaved]      = useState(false)
+  const [qrUploading, setQrUploading] = useState(false)
+  const [qrDone,     setQrDone]     = useState(false)
+  const qrInputRef = useRef(null)
 
   useEffect(() => {
     axios.get(`${API_BASE}/settings`, { headers: getAuthHeaders() })
@@ -217,6 +219,29 @@ function SettingsModal({ onClose }) {
     finally { setSaving(false) }
   }
 
+  const handleQrUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setQrUploading(true)
+    setQrDone(false)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await axios.post(`${API_BASE}/upload/qr-image`, form, {
+        headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' },
+      })
+      if (res.data?.url) {
+        setValues(v => ({ ...v, payment_qr_url: res.data.url }))
+        setQrDone(true)
+        setTimeout(() => setQrDone(false), 3000)
+      }
+    } catch { alert('อัปโหลด QR ไม่สำเร็จ') }
+    finally {
+      setQrUploading(false)
+      if (qrInputRef.current) qrInputRef.current.value = ''
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
@@ -231,15 +256,74 @@ function SettingsModal({ onClose }) {
         <div className="overflow-y-auto p-5 space-y-3" style={{ maxHeight: 'calc(92vh - 130px)' }}>
           {loadingS ? (
             <div className="py-10 text-center text-stone-400 font-bold">กำลังโหลด...</div>
-          ) : FIELDS.map(f => (
-            <div key={f.key}>
-              <label className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-1.5 block">{f.label}</label>
-              <input type={f.type} value={values[f.key] || ''}
-                onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
-                placeholder={f.placeholder}
-                className="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 focus:outline-none transition-all" />
-            </div>
-          ))}
+          ) : (
+            <>
+              {FIELDS.map(f => (
+                <div key={f.key}>
+                  <label className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-1.5 block">{f.label}</label>
+                  <input type={f.type} value={values[f.key] || ''}
+                    onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    className="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 focus:outline-none transition-all" />
+                </div>
+              ))}
+
+              {/* ── QR Code Upload ── */}
+              <div>
+                <label className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-1.5 block">
+                  📷 QR Code PromptPay
+                </label>
+                <div className="border-2 border-dashed border-stone-200 rounded-2xl overflow-hidden">
+                  {values.payment_qr_url ? (
+                    /* มี QR แล้ว — แสดงรูปพร้อมปุ่มเปลี่ยน */
+                    <div className="p-4 text-center space-y-3">
+                      <img
+                        src={values.payment_qr_url}
+                        alt="QR Code"
+                        className="w-44 h-44 mx-auto object-contain rounded-2xl bg-white ring-1 ring-stone-100 shadow-sm"
+                      />
+                      <button
+                        onClick={() => qrInputRef.current?.click()}
+                        disabled={qrUploading}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-black text-sm border border-orange-200 transition-all active:scale-95 disabled:opacity-60"
+                      >
+                        {qrUploading ? (
+                          <><span className="animate-spin">⏳</span> กำลังอัปโหลด...</>
+                        ) : qrDone ? (
+                          <>✅ อัปโหลดสำเร็จ!</>
+                        ) : (
+                          <>🔄 เปลี่ยน QR Code</>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    /* ยังไม่มี QR */
+                    <button
+                      onClick={() => qrInputRef.current?.click()}
+                      disabled={qrUploading}
+                      className="w-full py-10 flex flex-col items-center gap-3 text-stone-400 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-60"
+                    >
+                      {qrUploading ? (
+                        <><span className="text-3xl animate-spin">⏳</span><span className="text-sm font-bold">กำลังอัปโหลด...</span></>
+                      ) : (
+                        <><span className="text-4xl">📷</span><span className="text-sm font-bold">กดเพื่ออัปโหลด QR Code</span><span className="text-xs">รองรับ JPG, PNG</span></>
+                      )}
+                    </button>
+                  )}
+                  <input
+                    ref={qrInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleQrUpload}
+                  />
+                </div>
+                {qrDone && (
+                  <p className="text-emerald-600 text-xs font-bold mt-1.5">✅ บันทึก QR อัตโนมัติแล้ว</p>
+                )}
+              </div>
+            </>
+          )}
         </div>
         <div className="px-5 py-4 border-t border-stone-100 flex gap-3 flex-shrink-0">
           <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-600 font-bold text-sm hover:bg-stone-200 transition-colors">ยกเลิก</button>

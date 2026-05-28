@@ -34,4 +34,38 @@ const uploadMenuImage = async (req, res) => {
   }
 };
 
-module.exports = { upload, uploadMenuImage };
+const uploadQrImage = async (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'ไม่พบไฟล์รูปภาพ' });
+
+  const ext = req.file.originalname.split('.').pop().toLowerCase() || 'jpg';
+  const filename = `qr/payment_qr.${ext}`;   // ชื่อคงที่ — เขียนทับทุกครั้ง
+
+  try {
+    // ลบของเก่าก่อน (ถ้ามี) แล้วค่อย upload ใหม่
+    await supabase.storage.from('menu-images').remove([filename]);
+
+    const { error } = await supabase.storage
+      .from('menu-images')
+      .upload(filename, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage.from('menu-images').getPublicUrl(filename);
+    const publicUrl = `${data.publicUrl}?t=${Date.now()}`; // cache-bust
+
+    // บันทึก URL ลง settings อัตโนมัติ
+    await supabase
+      .from('settings')
+      .upsert({ key: 'payment_qr_url', value: publicUrl, updated_at: new Date() }, { onConflict: 'key' });
+
+    res.json({ success: true, url: publicUrl });
+  } catch (err) {
+    console.error('[uploadQrImage]', err);
+    res.status(500).json({ success: false, message: err.message || 'อัปโหลดไม่สำเร็จ' });
+  }
+};
+
+module.exports = { upload, uploadMenuImage, uploadQrImage };
