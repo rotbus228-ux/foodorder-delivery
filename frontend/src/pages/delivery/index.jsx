@@ -339,10 +339,26 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
 
               {/* ยอดที่โอน */}
               <div>
-                <p className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-2">ยอดที่โอน (บาท)</p>
+                <p className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-2">
+                  ยอดที่โอน (บาท) <span className="text-rose-500">*ต้องตรงกับยอดรวม</span>
+                </p>
                 <input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)}
                   placeholder={`${grandTotal}`} min={0}
-                  className="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 text-base font-bold text-stone-800 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 focus:outline-none" />
+                  className={`w-full border-2 rounded-2xl px-4 py-3 text-base font-bold text-stone-800 focus:ring-4 focus:outline-none transition-colors ${
+                    payAmount && Number(payAmount) !== grandTotal
+                      ? 'border-rose-400 bg-rose-50 focus:border-rose-400 focus:ring-rose-100'
+                      : payAmount && Number(payAmount) === grandTotal
+                      ? 'border-emerald-400 bg-emerald-50 focus:border-emerald-400 focus:ring-emerald-100'
+                      : 'border-stone-200 focus:border-blue-400 focus:ring-blue-100'
+                  }`} />
+                {payAmount && Number(payAmount) !== grandTotal && (
+                  <p className="text-rose-600 text-xs font-bold mt-1.5 flex items-center gap-1">
+                    ⚠️ ยอดไม่ตรง — ต้องโอน ฿{grandTotal.toLocaleString()} เท่านั้น
+                  </p>
+                )}
+                {payAmount && Number(payAmount) === grandTotal && (
+                  <p className="text-emerald-600 text-xs font-bold mt-1.5">✅ ยอดถูกต้อง</p>
+                )}
               </div>
 
               {errorMsg && <p className="text-rose-600 text-sm font-semibold text-center">{errorMsg}</p>}
@@ -351,8 +367,9 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
                 <button onClick={() => { setStep(1); setErrorMsg('') }} className="flex-1 py-3.5 rounded-2xl bg-stone-100 text-stone-700 font-bold text-sm hover:bg-stone-200 transition-colors active:scale-95">
                   ← ย้อนกลับ
                 </button>
-                <button onClick={handleSubmit} disabled={sending || !slipFile}
-                  className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">
+                <button onClick={handleSubmit}
+                  disabled={sending || !slipFile || !payAmount || Number(payAmount) !== grandTotal}
+                  className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                   {sending ? '⏳ กำลังส่ง...' : '✅ ส่งออเดอร์'}
                 </button>
               </div>

@@ -7,6 +7,7 @@ import AdminDeliveryDashboard  from './pages/admin/dashboard'
 import MenuManage              from './pages/admin/menu-manage'
 import AdminLoginPage          from './pages/admin/login'
 import AdminProtectedRoute     from './components/AdminProtectedRoute'
+import AdminCustomersPage      from './pages/admin/customers'
 
 export default function App() {
   return (
@@ -33,6 +34,9 @@ export default function App() {
         } />
         <Route path="/admin/menu" element={
           <AdminProtectedRoute><MenuManage /></AdminProtectedRoute>
+        } />
+        <Route path="/admin/customers" element={
+          <AdminProtectedRoute><AdminCustomersPage /></AdminProtectedRoute>
         } />
 
         {/* ── 404 ── */}

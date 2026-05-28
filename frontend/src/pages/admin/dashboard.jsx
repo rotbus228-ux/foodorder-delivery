@@ -189,6 +189,7 @@ function SettingsModal({ onClose }) {
     { key: 'payment_bank_name',      label: '🏦 ชื่อธนาคาร',       placeholder: 'ธนาคารกสิกรไทย',  type: 'text'   },
     { key: 'payment_account_number', label: '💳 เลขบัญชี',         placeholder: '000-0-00000-0',   type: 'text'   },
     { key: 'payment_account_name',   label: '👤 ชื่อบัญชี',        placeholder: 'นาย...',           type: 'text'   },
+    { key: 'payment_qr_url',         label: '📷 QR Code URL',       placeholder: 'https://...',      type: 'url'    },
   ]
   const [values,  setValues]  = useState({})
   const [loadingS, setLoadingS] = useState(true)
@@ -375,6 +376,10 @@ export default function AdminDeliveryDashboard() {
             <Link to="/admin/menu"
               className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-colors">
               🍽️ เมนู
+            </Link>
+            <Link to="/admin/customers"
+              className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-colors">
+              👥 ลูกค้า
             </Link>
             <button onClick={() => setShowSettings(true)}
               className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-colors">
