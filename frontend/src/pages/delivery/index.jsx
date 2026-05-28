@@ -385,28 +385,25 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
 
                 {/* อัปโหลดสลีป */}
                 <div>
-                  <p className="text-xs font-black text-stone-500 uppercase tracking-widest mb-2">📎 แนบหลักฐานการโอนเงิน <span className="text-red-500">*</span></p>
+                  <p className="text-xs font-black text-stone-500 uppercase tracking-widest mb-2">แนบหลักฐานการโอนเงิน <span className="text-red-500">*</span></p>
                   <input ref={fileRef} type="file" accept="image/*" onChange={pickSlip} className="hidden" />
-                  <button onClick={() => fileRef.current?.click()}
-                    className={`w-full rounded-2xl border-2 border-dashed transition-all active:scale-[0.99] ${slipPreview ? 'border-emerald-300 bg-emerald-50 p-3' : 'border-stone-300 bg-stone-50 hover:border-red-300 hover:bg-red-50 py-8'}`}>
-                    {slipPreview ? (
-                      <div className="flex items-center gap-3">
-                        <img src={slipPreview} alt="slip" className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
-                        <div className="text-left">
-                          <p className="text-sm font-black text-emerald-700">✅ แนบสลีปแล้ว</p>
-                          <p className="text-xs text-stone-500 mt-0.5">กดเพื่อเปลี่ยนรูป</p>
-                        </div>
+                  {slipPreview ? (
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-emerald-300 bg-emerald-50">
+                      <img src={slipPreview} alt="slip" className="w-14 h-14 object-cover rounded-xl flex-shrink-0 shadow-sm" />
+                      <div className="flex-1 text-left">
+                        <p className="text-sm font-black text-emerald-700">✅ แนบสลีปแล้ว</p>
+                        <button onClick={() => fileRef.current?.click()} className="text-xs text-emerald-600 underline mt-0.5">เปลี่ยนรูป</button>
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-stone-400">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-                        </svg>
-                        <p className="text-sm font-bold">กดเพื่อเลือกสลีปโอนเงิน</p>
-                        <p className="text-xs">รองรับ JPG, PNG</p>
-                      </div>
-                    )}
-                  </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => fileRef.current?.click()}
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-red-400 bg-white text-red-500 font-black text-sm hover:bg-red-50 active:scale-[0.98] transition-all">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                      </svg>
+                      เลือกสลีป
+                    </button>
+                  )}
                 </div>
 
                 {/* ยอดที่โอน */}
