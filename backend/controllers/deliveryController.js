@@ -15,11 +15,16 @@ async function createDeliveryOrder(req, res) {
     location_lat, location_lng,
   } = req.body;
 
-  if (!customer_name?.trim())    return res.status(400).json({ success: false, message: 'กรุณาระบุชื่อลูกค้า' });
-  if (!customer_phone?.trim())   return res.status(400).json({ success: false, message: 'กรุณาระบุเบอร์โทร' });
-  if (!delivery_address?.trim()) return res.status(400).json({ success: false, message: 'กรุณาระบุที่อยู่จัดส่ง' });
+  if (!customer_name?.trim())                    return res.status(400).json({ success: false, message: 'กรุณาระบุชื่อลูกค้า' });
+  if (customer_name.trim().length > 100)         return res.status(400).json({ success: false, message: 'ชื่อยาวเกินไป (สูงสุด 100 ตัวอักษร)' });
+  if (!customer_phone?.trim())                   return res.status(400).json({ success: false, message: 'กรุณาระบุเบอร์โทร' });
+  if (!/^[0-9+\-\s]{7,20}$/.test(customer_phone.trim())) return res.status(400).json({ success: false, message: 'รูปแบบเบอร์โทรไม่ถูกต้อง' });
+  if (!delivery_address?.trim())                 return res.status(400).json({ success: false, message: 'กรุณาระบุที่อยู่จัดส่ง' });
+  if (delivery_address.trim().length > 500)      return res.status(400).json({ success: false, message: 'ที่อยู่ยาวเกินไป (สูงสุด 500 ตัวอักษร)' });
   if (!Array.isArray(items) || !items.length)
     return res.status(400).json({ success: false, message: 'กรุณาเลือกเมนูอย่างน้อย 1 รายการ' });
+  if (items.length > 50)
+    return res.status(400).json({ success: false, message: 'จำนวนรายการมากเกินไป' });
   if (!['cash', 'transfer'].includes(payment_method))
     return res.status(400).json({ success: false, message: 'วิธีชำระเงินไม่ถูกต้อง' });
 
@@ -176,7 +181,34 @@ async function uploadPaymentSlip(req, res) {
 
   if (!req.file) return res.status(400).json({ success: false, message: 'ไม่พบไฟล์สลีป' });
 
+  // ตรวจ MIME type — รับเฉพาะรูปภาพ
+  if (!req.file.mimetype.startsWith('image/')) {
+    return res.status(400).json({ success: false, message: 'ต้องเป็นไฟล์รูปภาพเท่านั้น (JPG, PNG)' });
+  }
+
+  // ตรวจว่า ID เป็นตัวเลข
+  if (!id || isNaN(Number(id))) {
+    return res.status(400).json({ success: false, message: 'Order ID ไม่ถูกต้อง' });
+  }
+
   try {
+    // ตรวจว่า order นี้มีอยู่จริงและเป็น transfer payment
+    const { data: orderCheck, error: checkErr } = await supabase
+      .from('delivery_orders')
+      .select('id, payment_method, status')
+      .eq('id', Number(id))
+      .single();
+
+    if (checkErr || !orderCheck) {
+      return res.status(404).json({ success: false, message: 'ไม่พบออเดอร์' });
+    }
+    if (orderCheck.payment_method !== 'transfer') {
+      return res.status(400).json({ success: false, message: 'ออเดอร์นี้ไม่ใช่การโอนเงิน' });
+    }
+    if (!['pending_payment', 'pending'].includes(orderCheck.status)) {
+      return res.status(400).json({ success: false, message: 'ออเดอร์นี้ไม่สามารถอัปโหลดสลีปได้แล้ว' });
+    }
+
     const ext      = req.file.originalname.split('.').pop().toLowerCase() || 'jpg';
     const filename = `slip_${id}_${Date.now()}.${ext}`;
 

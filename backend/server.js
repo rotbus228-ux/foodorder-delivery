@@ -19,6 +19,7 @@ const express    = require('express');
 const http       = require('http');
 const { Server } = require('socket.io');
 const cors       = require('cors');
+const rateLimit  = require('express-rate-limit');
 
 const supabase   = require('./config/supabase');
 const apiRoutes  = require('./routes/api');
@@ -60,10 +61,36 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => console.log(`[Socket.io] disconnected : ${socket.id}`));
 });
 
+/* ── Rate Limiters ── */
+// Login: max 10 ครั้งต่อ 15 นาที (ป้องกัน brute force)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'พยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ใน 15 นาที' },
+});
+// Order creation: max 30 ออเดอร์ต่อนาที ต่อ IP
+const orderLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'ส่งคำขอมากเกินไป กรุณารอสักครู่' },
+});
+// General API: max 200 requests/min per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'ส่ง request มากเกินไป กรุณารอสักครู่' },
+});
+
 /* ── Middleware ── */
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 /* ── Routes ── */
 app.get('/',       (req, res) => res.json({ message: 'Delivery Server is running', status: 'ok', timestamp: new Date().toISOString() }));
@@ -78,8 +105,10 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
-app.use('/api', apiRoutes);
+app.use('/api/delivery/orders', orderLimiter);
+app.use('/api', generalLimiter, apiRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 // eslint-disable-next-line no-unused-vars
