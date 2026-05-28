@@ -139,13 +139,13 @@ function OptionsModal({ menu, onConfirm, onClose }) {
 
 /* ── CheckoutModal ────────────────────────────────────────────────── */
 function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuccess }) {
-  const [step,          setStep]          = useState(1)   // 1=เลือกชำระ, 2=โอนเงิน
-  const [payMethod,     setPayMethod]     = useState('cash')
-  const [slipFile,      setSlipFile]      = useState(null)
-  const [slipPreview,   setSlipPreview]   = useState(null)
-  const [payAmount,     setPayAmount]     = useState('')
-  const [sending,       setSending]       = useState(false)
-  const [errorMsg,      setErrorMsg]      = useState('')
+  const [step,        setStep]        = useState(1)
+  const [payMethod,   setPayMethod]   = useState('transfer')
+  const [slipFile,    setSlipFile]    = useState(null)
+  const [slipPreview, setSlipPreview] = useState(null)
+  const [payAmount,   setPayAmount]   = useState('')
+  const [sending,     setSending]     = useState(false)
+  const [errorMsg,    setErrorMsg]    = useState('')
   const fileRef = useRef()
 
   const deliveryFee = Number(settings.delivery_fee) || 30
@@ -163,7 +163,6 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
     setSending(true)
     setErrorMsg('')
     try {
-      // ── สร้างออเดอร์ ──
       const orderPayload = {
         customer_name:    customerInfo.name,
         customer_phone:   customerInfo.phone,
@@ -185,7 +184,6 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
       const order = res.data?.data
       if (!order?.id) throw new Error('ไม่ได้รับ Order ID')
 
-      // ── อัปโหลดสลีป (ถ้าโอนเงิน) ──
       if (payMethod === 'transfer' && slipFile) {
         const fd = new FormData()
         fd.append('slip', slipFile)
@@ -202,179 +200,254 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
     }
   }
 
+  /* ── Step indicator ── */
+  const steps = ['เลือกการชำระ', 'ชำระเงิน', 'เสร็จสิ้น']
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={!sending ? onClose : undefined} />
-      <div className="relative w-full sm:max-w-md bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl max-h-[96vh] overflow-hidden" style={{ animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
-        <div className="sm:hidden flex justify-center pt-3"><div className="w-12 h-1.5 bg-stone-300 rounded-full" /></div>
+      <div className="relative w-full sm:max-w-md bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl max-h-[96vh] overflow-hidden flex flex-col"
+        style={{ animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
+
+        <div className="sm:hidden flex justify-center pt-3 flex-shrink-0"><div className="w-12 h-1.5 bg-stone-200 rounded-full" /></div>
 
         {/* Header */}
-        <div className="bg-red-900 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-black text-white flex items-center gap-2">🛒 ชำระเงิน</h2>
+        <div className="bg-red-800 px-5 py-4 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h2 className="text-base font-black text-white">ชำระเงิน</h2>
+            <p className="text-red-300 text-xs mt-0.5">ยอดรวม <span className="text-white font-black">฿{grandTotal.toLocaleString()}</span></p>
+          </div>
           {!sending && (
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
+            <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           )}
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(96vh-80px)] p-5 space-y-5">
+        {/* Step indicator */}
+        <div className="flex items-center px-5 py-3 bg-stone-50 border-b border-stone-100 flex-shrink-0">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-center flex-1 last:flex-none">
+              <div className={`flex items-center gap-1.5 ${i + 1 <= step ? 'text-red-700' : 'text-stone-400'}`}>
+                <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center flex-shrink-0 ${i + 1 < step ? 'bg-red-700 text-white' : i + 1 === step ? 'bg-red-700 text-white ring-2 ring-red-200' : 'bg-stone-200 text-stone-400'}`}>
+                  {i + 1 < step ? '✓' : i + 1}
+                </span>
+                <span className="text-[10px] font-bold hidden xs:block">{s}</span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className={`flex-1 h-px mx-2 ${i + 1 < step ? 'bg-red-400' : 'bg-stone-200'}`} />
+              )}
+            </div>
+          ))}
+        </div>
 
-          {/* สรุปรายการ */}
-          <div>
-            <p className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-2.5">รายการอาหาร ({cart.length})</p>
-            <div className="bg-stone-50 rounded-2xl divide-y divide-stone-100 overflow-hidden">
+        <div className="overflow-y-auto flex-1">
+          <div className="p-5 space-y-4">
+
+            {/* ── รายการอาหาร (ทั้ง 2 steps) ── */}
+            <div className="bg-stone-50 rounded-2xl overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-stone-100">
+                <p className="text-xs font-black text-stone-500">รายการอาหาร ({cart.length} รายการ)</p>
+              </div>
               {cart.map(item => (
-                <div key={item.key} className="px-4 py-3 flex items-start justify-between gap-3">
+                <div key={item.key} className="px-4 py-3 flex items-start justify-between gap-3 border-b border-stone-100 last:border-0">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-stone-800 line-clamp-1">{item.name}</p>
-                    {item.options.length > 0 && <p className="text-[11px] text-blue-600 font-semibold mt-0.5">{item.options.map(o => o.label).join(', ')}</p>}
-                    {item.note && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">📝 {item.note}</p>}
+                    <p className="text-sm font-bold text-stone-800 line-clamp-1">{item.name} <span className="text-stone-400 font-normal">×{item.quantity}</span></p>
+                    {item.options.length > 0 && <p className="text-[11px] text-red-500 font-semibold mt-0.5">· {item.options.map(o => o.label).join(', ')}</p>}
+                    {item.note && <p className="text-[11px] text-amber-600 font-semibold mt-0.5">📝 {item.note}</p>}
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-black text-stone-800">฿{(item.unitPrice * item.quantity).toLocaleString()}</p>
-                    <p className="text-[10px] text-stone-400">฿{item.unitPrice} × {item.quantity}</p>
-                  </div>
+                  <p className="text-sm font-black text-stone-800 flex-shrink-0">฿{(item.unitPrice * item.quantity).toLocaleString()}</p>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* ยอดรวม */}
-          <div className="bg-sky-50 rounded-2xl px-5 py-4 ring-1 ring-sky-100 space-y-2">
-            <div className="flex justify-between text-sm text-stone-600">
-              <span>ค่าอาหาร</span><span className="font-bold">฿{cartTotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-sm text-stone-600">
-              <span>ค่าส่ง</span><span className="font-bold">฿{deliveryFee}</span>
-            </div>
-            <div className="flex justify-between font-black text-lg text-stone-900 pt-2 border-t border-sky-200">
-              <span>ยอดรวมทั้งหมด</span>
-              <span className="text-blue-600">฿{grandTotal.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* ── STEP 1: เลือกวิธีชำระ ── */}
-          {step === 1 && (
-            <div className="space-y-3">
-              <p className="text-[11px] font-black text-stone-500 uppercase tracking-widest">เลือกวิธีชำระเงิน</p>
-              {[
-                { value: 'cash',     icon: '💵', label: 'เงินสด',   sub: 'ชำระเงินกับไรเดอร์ตอนรับของ' },
-                { value: 'transfer', icon: '💳', label: 'โอนเงิน',  sub: 'โอนผ่านแอปธนาคาร + ส่งสลีป' },
-              ].map(opt => (
-                <button key={opt.value} onClick={() => setPayMethod(opt.value)}
-                  className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl border-2 text-left transition-all ${payMethod === opt.value ? 'border-blue-500 bg-sky-50 ring-2 ring-blue-500/20' : 'border-stone-200 hover:border-sky-200 hover:bg-stone-50'}`}>
-                  <span className="text-2xl">{opt.icon}</span>
-                  <div>
-                    <p className={`font-black text-sm ${payMethod === opt.value ? 'text-blue-700' : 'text-stone-700'}`}>{opt.label}</p>
-                    <p className="text-xs text-stone-400">{opt.sub}</p>
-                  </div>
-                  {payMethod === opt.value && (
-                    <span className="ml-auto w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    </span>
-                  )}
-                </button>
-              ))}
-
-              {errorMsg && <p className="text-rose-600 text-sm font-semibold text-center">{errorMsg}</p>}
-
-              <div className="flex gap-3 pt-2">
-                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl bg-stone-100 text-stone-700 font-bold text-sm hover:bg-stone-200 transition-colors active:scale-95">
-                  ← ยกเลิก
-                </button>
-                {payMethod === 'cash' ? (
-                  <button onClick={handleSubmit} disabled={sending}
-                    className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">
-                    {sending ? '⏳ กำลังส่ง...' : '✅ ยืนยันสั่งเลย'}
-                  </button>
-                ) : (
-                  <button onClick={() => setStep(2)}
-                    className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all">
-                    ถัดไป →
-                  </button>
-                )}
+              <div className="px-4 py-3 space-y-1.5 bg-white">
+                <div className="flex justify-between text-xs text-stone-500">
+                  <span>ค่าอาหาร</span><span>฿{cartTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs text-stone-500">
+                  <span>ค่าส่ง</span><span>฿{deliveryFee}</span>
+                </div>
+                <div className="flex justify-between text-sm font-black text-stone-900 pt-1.5 border-t border-stone-100">
+                  <span>รวมทั้งหมด</span>
+                  <span className="text-red-700">฿{grandTotal.toLocaleString()}</span>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* ── STEP 2: โอนเงิน + อัปโหลดสลีป ── */}
-          {step === 2 && (
-            <div className="space-y-4">
-              {/* ข้อมูลบัญชี */}
-              <div className="bg-blue-50 rounded-2xl p-4 ring-1 ring-blue-100 space-y-2 text-center">
-                <p className="text-xs text-blue-500 font-black uppercase tracking-widest">ช่องทางโอนเงิน</p>
-                {settings.payment_qr_url ? (
-                  <img src={settings.payment_qr_url} alt="QR Payment" className="w-48 h-48 mx-auto object-contain rounded-xl" />
-                ) : (
-                  <div className="w-40 h-40 mx-auto bg-stone-200 rounded-xl flex items-center justify-center text-stone-400 text-xs">ไม่มี QR</div>
-                )}
-                <p className="text-lg font-black text-stone-900">฿{grandTotal.toLocaleString()}</p>
-                <p className="text-sm text-stone-600">{settings.payment_bank_name}</p>
-                <p className="text-xl font-black text-blue-700 tracking-widest">{settings.payment_account_number}</p>
-                <p className="text-sm text-stone-600">{settings.payment_account_name}</p>
-              </div>
+            {/* ── STEP 1: เลือกวิธีชำระ ── */}
+            {step === 1 && (
+              <div className="space-y-3">
+                <p className="text-xs font-black text-stone-500 uppercase tracking-widest">เลือกวิธีชำระเงิน</p>
 
-              {/* อัปโหลดสลีป */}
-              <div>
-                <p className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-2.5">อัปโหลดสลีปโอนเงิน *</p>
-                <input ref={fileRef} type="file" accept="image/*" onChange={pickSlip} className="hidden" />
-                <button onClick={() => fileRef.current?.click()}
-                  className="w-full py-4 rounded-2xl border-2 border-dashed border-stone-300 hover:border-blue-400 hover:bg-sky-50 transition-all text-stone-500 hover:text-blue-600 font-bold text-sm flex flex-col items-center gap-2">
-                  {slipPreview ? (
-                    <img src={slipPreview} alt="slip preview" className="w-32 h-32 object-cover rounded-xl" />
+                {[
+                  {
+                    value: 'transfer',
+                    icon: (
+                      <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <rect x="2" y="5" width="20" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2 10h20"/>
+                        </svg>
+                      </div>
+                    ),
+                    label: 'ชำระทันที',
+                    sub: 'โอนผ่านแอปธนาคาร + แนบสลีป',
+                  },
+                  {
+                    value: 'cash',
+                    icon: (
+                      <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                      </div>
+                    ),
+                    label: 'เก็บปลายทาง',
+                    sub: 'ชำระเงินสดกับไรเดอร์เมื่อรับของ',
+                  },
+                ].map(opt => (
+                  <button key={opt.value} onClick={() => setPayMethod(opt.value)}
+                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 text-left transition-all active:scale-[0.99] ${payMethod === opt.value ? 'border-red-500 bg-red-50 shadow-sm' : 'border-stone-200 bg-white hover:border-stone-300'}`}>
+                    {opt.icon}
+                    <div className="flex-1">
+                      <p className={`font-black text-sm ${payMethod === opt.value ? 'text-red-800' : 'text-stone-700'}`}>{opt.label}</p>
+                      <p className="text-xs text-stone-400 mt-0.5">{opt.sub}</p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${payMethod === opt.value ? 'border-red-600 bg-red-600' : 'border-stone-300'}`}>
+                      {payMethod === opt.value && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                  </button>
+                ))}
+
+                {errorMsg && <p className="text-rose-600 text-sm font-semibold text-center py-1">{errorMsg}</p>}
+
+                <div className="flex gap-3 pt-1">
+                  <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl bg-stone-100 text-stone-600 font-bold text-sm hover:bg-stone-200 transition-colors active:scale-95">
+                    ยกเลิก
+                  </button>
+                  {payMethod === 'cash' ? (
+                    <button onClick={handleSubmit} disabled={sending}
+                      className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg shadow-red-200 active:scale-95 transition-all disabled:opacity-60">
+                      {sending ? '⏳ กำลังส่ง...' : '✅ ยืนยันสั่งอาหาร'}
+                    </button>
                   ) : (
-                    <>
-                      <span className="text-3xl">📸</span>
-                      <span>กดเพื่อเลือกรูปสลีป</span>
-                    </>
+                    <button onClick={() => setStep(2)}
+                      className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg shadow-red-200 active:scale-95 transition-all">
+                      ถัดไป →
+                    </button>
                   )}
-                </button>
-                {slipPreview && (
-                  <button onClick={() => fileRef.current?.click()} className="w-full mt-2 text-xs text-sky-500 font-bold text-center hover:underline">
-                    เปลี่ยนรูป
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 2: ชำระทันที ── */}
+            {step === 2 && (
+              <div className="space-y-4">
+
+                {/* กล่อง QR + ข้อมูลบัญชี */}
+                <div className="border-2 border-stone-200 rounded-2xl overflow-hidden">
+                  {/* ยอดชำระ */}
+                  <div className="bg-red-700 px-4 py-3 text-center">
+                    <p className="text-red-200 text-xs font-bold">ยอดชำระ</p>
+                    <p className="text-white text-3xl font-black tracking-tight">฿{grandTotal.toLocaleString()}</p>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="bg-white px-4 py-5 flex flex-col items-center gap-3">
+                    {settings.payment_qr_url ? (
+                      <>
+                        <div className="bg-blue-900 text-white text-[10px] font-black px-4 py-1.5 rounded-full tracking-widest">THAI QR PAYMENT</div>
+                        <div className="p-2 border-2 border-stone-200 rounded-2xl bg-white shadow-sm">
+                          <img src={settings.payment_qr_url} alt="QR PromptPay"
+                            className="w-44 h-44 object-contain" />
+                        </div>
+                        <p className="text-xs text-stone-500 font-bold">สแกน QR เพื่อโอนเข้าบัญชี</p>
+                      </>
+                    ) : (
+                      <div className="w-44 h-44 bg-stone-100 rounded-2xl flex items-center justify-center">
+                        <p className="text-stone-400 text-xs font-bold text-center">ไม่มี QR Code<br/>กรุณาโอนตามบัญชีด้านล่าง</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ข้อมูลบัญชี */}
+                  <div className="border-t border-stone-200 px-4 py-4 space-y-1.5 bg-stone-50 text-center">
+                    {settings.payment_account_name && (
+                      <p className="text-sm font-black text-stone-800">ชื่อ: {settings.payment_account_name}</p>
+                    )}
+                    {settings.payment_account_number && (
+                      <p className="text-base font-black text-red-700 tracking-widest">{settings.payment_account_number}</p>
+                    )}
+                    {settings.payment_bank_name && (
+                      <p className="text-xs text-stone-500 font-bold">ธนาคาร: {settings.payment_bank_name}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* อัปโหลดสลีป */}
+                <div>
+                  <p className="text-xs font-black text-stone-500 uppercase tracking-widest mb-2">📎 แนบหลักฐานการโอนเงิน <span className="text-red-500">*</span></p>
+                  <input ref={fileRef} type="file" accept="image/*" onChange={pickSlip} className="hidden" />
+                  <button onClick={() => fileRef.current?.click()}
+                    className={`w-full rounded-2xl border-2 border-dashed transition-all active:scale-[0.99] ${slipPreview ? 'border-emerald-300 bg-emerald-50 p-3' : 'border-stone-300 bg-stone-50 hover:border-red-300 hover:bg-red-50 py-8'}`}>
+                    {slipPreview ? (
+                      <div className="flex items-center gap-3">
+                        <img src={slipPreview} alt="slip" className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
+                        <div className="text-left">
+                          <p className="text-sm font-black text-emerald-700">✅ แนบสลีปแล้ว</p>
+                          <p className="text-xs text-stone-500 mt-0.5">กดเพื่อเปลี่ยนรูป</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-stone-400">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                        </svg>
+                        <p className="text-sm font-bold">กดเพื่อเลือกสลีปโอนเงิน</p>
+                        <p className="text-xs">รองรับ JPG, PNG</p>
+                      </div>
+                    )}
                   </button>
-                )}
-              </div>
+                </div>
 
-              {/* ยอดที่โอน */}
-              <div>
-                <p className="text-[11px] font-black text-stone-500 uppercase tracking-widest mb-2">
-                  ยอดที่โอน (บาท) <span className="text-rose-500">*ต้องตรงกับยอดรวม</span>
-                </p>
-                <input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)}
-                  placeholder={`${grandTotal}`} min={0}
-                  className={`w-full border-2 rounded-2xl px-4 py-3 text-base font-bold text-stone-800 focus:ring-4 focus:outline-none transition-colors ${
-                    payAmount && Number(payAmount) !== grandTotal
-                      ? 'border-rose-400 bg-rose-50 focus:border-rose-400 focus:ring-rose-100'
-                      : payAmount && Number(payAmount) === grandTotal
-                      ? 'border-emerald-400 bg-emerald-50 focus:border-emerald-400 focus:ring-emerald-100'
-                      : 'border-stone-200 focus:border-blue-400 focus:ring-blue-100'
-                  }`} />
-                {payAmount && Number(payAmount) !== grandTotal && (
-                  <p className="text-rose-600 text-xs font-bold mt-1.5 flex items-center gap-1">
-                    ⚠️ ยอดไม่ตรง — ต้องโอน ฿{grandTotal.toLocaleString()} เท่านั้น
+                {/* ยอดที่โอน */}
+                <div>
+                  <p className="text-xs font-black text-stone-500 uppercase tracking-widest mb-2">
+                    ยอดที่โอน (บาท) <span className="text-red-500">*ต้องตรงกับยอดชำระ</span>
                   </p>
-                )}
-                {payAmount && Number(payAmount) === grandTotal && (
-                  <p className="text-emerald-600 text-xs font-bold mt-1.5">✅ ยอดถูกต้อง</p>
-                )}
-              </div>
+                  <input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)}
+                    placeholder={`${grandTotal}`} min={0}
+                    className={`w-full border-2 rounded-2xl px-4 py-3.5 text-xl font-black text-center focus:ring-4 focus:outline-none transition-colors ${
+                      payAmount && Number(payAmount) !== grandTotal
+                        ? 'border-rose-400 bg-rose-50 text-rose-600 focus:ring-rose-100'
+                        : payAmount && Number(payAmount) === grandTotal
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700 focus:ring-emerald-100'
+                        : 'border-stone-200 text-stone-800 focus:border-red-400 focus:ring-red-100'
+                    }`} />
+                  {payAmount && Number(payAmount) !== grandTotal && (
+                    <p className="text-rose-600 text-xs font-bold mt-1.5">⚠️ ยอดไม่ตรง — ต้องโอน ฿{grandTotal.toLocaleString()} เท่านั้น</p>
+                  )}
+                  {payAmount && Number(payAmount) === grandTotal && (
+                    <p className="text-emerald-600 text-xs font-bold mt-1.5">✅ ยอดถูกต้อง</p>
+                  )}
+                </div>
 
-              {errorMsg && <p className="text-rose-600 text-sm font-semibold text-center">{errorMsg}</p>}
+                {errorMsg && <p className="text-rose-600 text-sm font-semibold text-center">{errorMsg}</p>}
 
-              <div className="flex gap-3">
-                <button onClick={() => { setStep(1); setErrorMsg('') }} className="flex-1 py-3.5 rounded-2xl bg-stone-100 text-stone-700 font-bold text-sm hover:bg-stone-200 transition-colors active:scale-95">
-                  ← ย้อนกลับ
-                </button>
-                <button onClick={handleSubmit}
-                  disabled={sending || !slipFile || !payAmount || Number(payAmount) !== grandTotal}
-                  className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-                  {sending ? '⏳ กำลังส่ง...' : '✅ ส่งออเดอร์'}
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={() => { setStep(1); setErrorMsg('') }}
+                    className="flex-1 py-3.5 rounded-2xl bg-stone-100 text-stone-600 font-bold text-sm hover:bg-stone-200 transition-colors active:scale-95">
+                    ← กลับ
+                  </button>
+                  <button onClick={handleSubmit}
+                    disabled={sending || !slipFile || !payAmount || Number(payAmount) !== grandTotal}
+                    className="flex-1 py-3.5 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg shadow-red-200 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                    {sending ? '⏳ กำลังส่ง...' : '✅ สั่งซื้อ'}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+          </div>
         </div>
       </div>
     </div>
