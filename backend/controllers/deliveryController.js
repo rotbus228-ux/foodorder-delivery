@@ -1,6 +1,21 @@
 const supabase = require('../config/supabase');
 const { sendDeliveryNotification } = require('../config/telegram');
 
+/* ── Bangkok timezone helpers (UTC+7) ───────────────────────────── */
+function getBangkokDateStr() {
+  // Thailand is UTC+7 — get current date in Bangkok time
+  const now = new Date();
+  const bangkokTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  return bangkokTime.toISOString().split('T')[0]; // YYYY-MM-DD in Bangkok
+}
+
+function getBangkokDayRange(dateStr) {
+  // Given a YYYY-MM-DD Bangkok date, return UTC ISO start/end for Supabase query
+  const start = new Date(`${dateStr}T00:00:00+07:00`).toISOString();
+  const end   = new Date(`${dateStr}T23:59:59+07:00`).toISOString();
+  return { start, end };
+}
+
 /* ── Validation helpers ─────────────────────────────────────────── */
 const VALID_STATUSES = [
   'pending_payment', 'pending', 'preparing',
@@ -44,12 +59,13 @@ async function createDeliveryOrder(req, res) {
     // ── สถานะเริ่มต้น ──
     const initial_status = payment_method === 'transfer' ? 'pending_payment' : 'pending';
 
-    // ── คำนวณเลขคิววันนี้ ──
-    const today = new Date().toISOString().split('T')[0];
+    // ── คำนวณเลขคิววันนี้ (เวลาไทย UTC+7) ──
+    const today = getBangkokDateStr();
+    const { start: todayStart } = getBangkokDayRange(today);
     const { count: todayCount } = await supabase
       .from('delivery_orders')
       .select('*', { count: 'exact', head: true })
-      .gte('created_at', `${today}T00:00:00`);
+      .gte('created_at', todayStart);
     const daily_queue_number = (todayCount || 0) + 1;
 
     // ── Insert delivery_orders ──
@@ -130,8 +146,7 @@ async function getAllDeliveryOrders(req, res) {
 
     if (status) q = q.eq('status', status);
     if (date) {
-      const start = `${date}T00:00:00`;
-      const end   = `${date}T23:59:59`;
+      const { start, end } = getBangkokDayRange(date); // treat date as Bangkok date
       q = q.gte('created_at', start).lte('created_at', end);
     }
 
@@ -250,9 +265,8 @@ async function uploadPaymentSlip(req, res) {
 /* ── getTodayStats (admin) ──────────────────────────────────────── */
 async function getTodayStats(req, res) {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const start = `${today}T00:00:00`;
-    const end   = `${today}T23:59:59`;
+    const today = getBangkokDateStr(); // เวลาไทย UTC+7
+    const { start, end } = getBangkokDayRange(today);
 
     const { data, error } = await supabase
       .from('delivery_orders')

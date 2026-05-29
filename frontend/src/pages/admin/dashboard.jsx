@@ -26,9 +26,16 @@ const NEXT_STATUS = {
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
+// parse timestamp เป็น UTC เสมอ (กัน Supabase ส่งมาโดยไม่มี 'Z')
+function parseUTC(dateStr) {
+  if (!dateStr) return new Date()
+  if (!/Z$|[+-]\d{2}:\d{2}$/.test(dateStr)) return new Date(dateStr + 'Z')
+  return new Date(dateStr)
+}
+
 function elapsed(dateStr) {
   if (!dateStr) return ''
-  const mins = Math.floor((Date.now() - new Date(dateStr)) / 60000)
+  const mins = Math.floor((Date.now() - parseUTC(dateStr)) / 60000)
   if (mins < 1)  return 'เพิ่งสั่ง'
   if (mins < 60) return `${mins} นาทีที่แล้ว`
   return `${Math.floor(mins / 60)} ชม. ${mins % 60} นาที`
@@ -94,7 +101,7 @@ function SlipModal({ order, onClose }) {
 function OrderCard({ order, isNew, onAction, isLoading, onSlipView }) {
   const sc         = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const nextActions = NEXT_STATUS[order.status] || []
-  const waitMins   = Math.floor((Date.now() - new Date(order.created_at)) / 60000)
+  const waitMins   = Math.floor((Date.now() - parseUTC(order.created_at)) / 60000)
   const urgency    = waitMins >= 15 ? 'critical' : waitMins >= 7 ? 'warning' : 'normal'
   const urgencyStyle = {
     normal:   'border-stone-100',

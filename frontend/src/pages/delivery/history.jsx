@@ -14,8 +14,18 @@ const STATUS = {
   cancelled:        { label: 'ยกเลิก',        icon: '❌', color: 'text-stone-500  bg-stone-50  border-stone-200'   },
 }
 
+// ── parse timestamp เป็น UTC เสมอ (กัน Supabase ส่งมาโดยไม่มี 'Z') ──
+function parseUTC(dateStr) {
+  if (!dateStr) return new Date()
+  // ถ้าไม่มี timezone suffix ให้ถือว่าเป็น UTC
+  if (!/Z$|[+-]\d{2}:\d{2}$/.test(dateStr)) {
+    return new Date(dateStr + 'Z')
+  }
+  return new Date(dateStr)
+}
+
 function timeAgo(dateStr) {
-  const mins = Math.floor((Date.now() - new Date(dateStr)) / 60000)
+  const mins = Math.floor((Date.now() - parseUTC(dateStr)) / 60000)
   if (mins < 1)  return 'เพิ่งสั่ง'
   if (mins < 60) return `${mins} นาทีที่แล้ว`
   const hrs = Math.floor(mins / 60)
@@ -24,7 +34,7 @@ function timeAgo(dateStr) {
 }
 
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleString('th-TH', {
+  return parseUTC(dateStr).toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok', day: '2-digit', month: 'short',
     hour: '2-digit', minute: '2-digit',
   })
