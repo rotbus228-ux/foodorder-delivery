@@ -133,6 +133,7 @@ export default function ProfilePage() {
   const [hasProfile,   setHasProfile]   = useState(false)
   const [saving,       setSaving]       = useState(false)
   const [saved,        setSaved]        = useState(false)
+  const [locError,     setLocError]     = useState(false)
   const [showMap,      setShowMap]      = useState(false)
   const [showContact,  setShowContact]  = useState(false)
   const [settings,     setSettings]     = useState({})
@@ -144,7 +145,7 @@ export default function ProfilePage() {
       try {
         const p = JSON.parse(s)
         setForm(p)
-        const complete = !!(p.name?.trim() && p.phone?.trim() && p.address?.trim())
+        const complete = !!(p.name?.trim() && p.phone?.trim() && p.address?.trim() && p.location)
         setHasProfile(complete)
         // ถ้าข้อมูลครบและไม่ใช่ edit mode → ไปหน้าเมนูเลย
         if (complete && !isEditMode) {
@@ -163,6 +164,12 @@ export default function ProfilePage() {
       alert('กรุณากรอก ชื่อ, เบอร์โทร และที่อยู่ให้ครบ')
       return
     }
+    if (!form.location) {
+      setLocError(true)
+      document.getElementById('map-pin-btn')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    setLocError(false)
     setSaving(true)
     localStorage.setItem(PROFILE_KEY, JSON.stringify(form))
     setSaved(true)
@@ -269,27 +276,42 @@ export default function ProfilePage() {
                 className="w-full border border-stone-300 rounded-xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none resize-none bg-stone-50" />
             </div>
 
-            {/* ปักหมุด */}
+            {/* ปักหมุด — บังคับ */}
             <div>
-              <label className="text-sm font-bold text-stone-600 block mb-1.5">ปักหมุดที่อยู่ (ไม่บังคับ)</label>
-              <button onClick={() => setShowMap(true)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all ${form.location ? 'border-red-300 bg-red-50' : 'border-dashed border-stone-300 hover:border-red-300 hover:bg-red-50'}`}>
-                <span className="text-2xl">🗺️</span>
+              <label className="text-sm font-bold text-stone-600 block mb-1.5">
+                ปักหมุดที่อยู่บนแผนที่ <span className="text-red-500">*</span>
+                {!form.location && <span className="ml-1 text-[10px] text-red-500 font-bold">(จำเป็น)</span>}
+              </label>
+              <button id="map-pin-btn" onClick={() => { setShowMap(true); setLocError(false) }}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all
+                  ${form.location
+                    ? 'border-emerald-400 bg-emerald-50'
+                    : locError
+                      ? 'border-red-500 bg-red-50 animate-pulse'
+                      : 'border-dashed border-red-300 bg-red-50/40 hover:border-red-400 hover:bg-red-50'
+                  }`}>
+                <span className="text-2xl">{form.location ? '📍' : '🗺️'}</span>
                 <div className="flex-1 text-left">
                   {form.location
                     ? <>
-                        <p className="text-sm font-bold text-red-800">{form.location[0].toFixed(5)}, {form.location[1].toFixed(5)}</p>
-                        <p className="text-[11px] text-red-600 mt-0.5">แตะเพื่อเปลี่ยนตำแหน่ง</p>
+                        <p className="text-sm font-black text-emerald-800">✅ ปักหมุดแล้ว</p>
+                        <p className="text-[11px] text-emerald-600 mt-0.5 font-mono">{form.location[0].toFixed(5)}, {form.location[1].toFixed(5)}</p>
                       </>
-                    : <p className="text-sm text-stone-500 font-bold">กดเพื่อปักหมุดบนแผนที่</p>
+                    : <>
+                        <p className="text-sm font-black text-red-700">กดเพื่อปักหมุดบนแผนที่</p>
+                        <p className="text-[11px] text-red-500 mt-0.5">ช่วยให้ไรเดอร์หาบ้านคุณได้ถูกต้อง</p>
+                      </>
                   }
                 </div>
                 {form.location && (
                   <button onClick={e => { e.stopPropagation(); setField('location', null) }}
-                    className="w-7 h-7 bg-stone-200 hover:bg-red-100 rounded-full flex items-center justify-center text-stone-500 text-xs">✕</button>
+                    className="w-7 h-7 bg-white hover:bg-red-100 rounded-full flex items-center justify-center text-stone-400 text-xs shadow-sm">✕</button>
                 )}
-                <span className="text-red-600 text-lg">✏️</span>
+                <span className="text-lg">{form.location ? '✏️' : '➡️'}</span>
               </button>
+              {locError && !form.location && (
+                <p className="text-red-600 text-xs font-black mt-1.5">⚠️ กรุณาปักหมุดที่อยู่บนแผนที่ก่อนดำเนินการต่อ</p>
+              )}
             </div>
           </div>
 
@@ -308,11 +330,6 @@ export default function ProfilePage() {
               {saving ? '⏳ กำลังบันทึก...' : '💾 บันทึก & เข้าสู่เมนูอาหาร →'}
             </button>
 
-            {/* ข้ามไปเลย (ไม่กรอก) */}
-            <button onClick={() => navigate('/order')}
-              className="w-full py-3 rounded-2xl border-2 border-stone-300 text-stone-500 font-bold text-sm hover:bg-stone-100 transition-colors">
-              ข้ามขั้นตอนนี้ — เข้าดูเมนูก่อน
-            </button>
           </div>
         </div>
       </div>
