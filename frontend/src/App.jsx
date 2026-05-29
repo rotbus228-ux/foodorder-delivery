@@ -8,6 +8,7 @@ import MenuManage              from './pages/admin/menu-manage'
 import AdminLoginPage          from './pages/admin/login'
 import AdminProtectedRoute     from './components/AdminProtectedRoute'
 import AdminCustomersPage      from './pages/admin/customers'
+import AdminOrderHistoryPage   from './pages/admin/order-history'
 
 export default function App() {
   return (
@@ -37,6 +38,9 @@ export default function App() {
         } />
         <Route path="/admin/customers" element={
           <AdminProtectedRoute><AdminCustomersPage /></AdminProtectedRoute>
+        } />
+        <Route path="/admin/order-history" element={
+          <AdminProtectedRoute><AdminOrderHistoryPage /></AdminProtectedRoute>
         } />
 
         {/* ── 404 ── */}
