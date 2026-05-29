@@ -239,10 +239,10 @@ export default function ProfilePage() {
             {/* ชื่อ */}
             <div>
               <label className="text-sm font-bold text-stone-600 block mb-1.5">
-                ชื่อ-นามสกุล <span className="text-red-500">*</span>
+                ชื่อ <span className="text-red-500">*</span>
               </label>
               <input type="text" value={form.name} onChange={e => setField('name', e.target.value)}
-                placeholder="ชื่อ-นามสกุล"
+                placeholder="ชื่อของคุณ"
                 className="w-full border border-stone-300 rounded-xl px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none bg-stone-50" />
             </div>
 
