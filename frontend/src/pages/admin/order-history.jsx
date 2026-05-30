@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { getAuthHeaders, adminLogout, handleAuthError } from '../../utils/adminAuth'
+import CustomerProfileDrawer from '../../components/CustomerProfileDrawer'
 
 const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`
 
@@ -99,7 +100,7 @@ function SlipModal({ order, onClose }) {
 /* ════════════════════════════════════════════════════════
    OrderCard
 ════════════════════════════════════════════════════════ */
-function OrderCard({ order, onSlip }) {
+function OrderCard({ order, onSlip, onCustomer }) {
   const sc         = STATUS_CFG[order.status] || STATUS_CFG.pending
   const isTransfer = order.payment_method === 'transfer'
   const hasSlip    = !!order.payment_slip_url
@@ -125,15 +126,19 @@ function OrderCard({ order, onSlip }) {
       {/* ── body ── */}
       <div className="px-4 py-3 space-y-3">
 
-        {/* ข้อมูลลูกค้า */}
-        <div className="space-y-1">
-          <p className="font-black text-stone-900 text-sm">{order.customer_name}</p>
+        {/* ข้อมูลลูกค้า — กดเปิด profile ได้ */}
+        <button onClick={() => onCustomer?.(order)}
+          className="w-full text-left space-y-1 rounded-lg hover:bg-stone-50 -mx-1 px-1 py-0.5 transition-colors group">
+          <p className="font-black text-stone-900 text-sm group-hover:text-red-700">
+            {order.customer_name}
+            <span className="ml-1.5 text-[10px] text-stone-400 group-hover:text-red-500 font-bold">👤 ดูโปรไฟล์</span>
+          </p>
           <div className="flex items-center gap-3 text-xs text-stone-500">
             <span>📞 {order.customer_phone}</span>
             <span>🕐 {fmtDate(order.created_at)}</span>
           </div>
           <p className="text-xs text-stone-500 line-clamp-1">📍 {order.delivery_address}</p>
-        </div>
+        </button>
 
         {/* รายการ */}
         <div className="border-t border-stone-50 pt-2.5">
@@ -189,9 +194,10 @@ function OrderCard({ order, onSlip }) {
 export default function AdminOrderHistoryPage() {
   const navigate = useNavigate()
 
-  const [orders,   setOrders]   = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [slipView, setSlipView] = useState(null)
+  const [orders,       setOrders]       = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [slipView,     setSlipView]     = useState(null)
+  const [customerView, setCustomerView] = useState(null)  // { phone, name } | null
 
   const logout = () => { adminLogout(); navigate('/admin/login') }
 
@@ -214,6 +220,14 @@ export default function AdminOrderHistoryPage() {
 
       {slipView && (
         <SlipModal order={slipView} onClose={() => setSlipView(null)} />
+      )}
+
+      {customerView && (
+        <CustomerProfileDrawer
+          phone={customerView.phone}
+          customerName={customerView.name}
+          onClose={() => setCustomerView(null)}
+        />
       )}
 
       {/* ── Header ── */}
@@ -262,7 +276,12 @@ export default function AdminOrderHistoryPage() {
         ) : (
           <div className="space-y-3">
             {orders.map(order => (
-              <OrderCard key={order.id} order={order} onSlip={setSlipView} />
+              <OrderCard
+                key={order.id}
+                order={order}
+                onSlip={setSlipView}
+                onCustomer={o => setCustomerView({ phone: o.customer_phone, name: o.customer_name })}
+              />
             ))}
           </div>
         )}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import axios from 'axios'
 import { getAuthHeaders, adminLogout, handleAuthError } from '../../utils/adminAuth'
+import CustomerProfileDrawer from '../../components/CustomerProfileDrawer'
 
 const _BASE      = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const API_BASE   = `${_BASE}/api`
@@ -103,7 +104,7 @@ function SlipModal({ order, onClose }) {
 }
 
 /* ── OrderCard ──────────────────────────────────────────────────── */
-function OrderCard({ order, isNew, onAction, isLoading, onSlipView }) {
+function OrderCard({ order, isNew, onAction, isLoading, onSlipView, onCustomerView }) {
   const sc         = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const nextActions = NEXT_STATUS[order.status] || []
   const waitMins   = Math.floor((Date.now() - parseUTC(order.created_at)) / 60000)
@@ -131,11 +132,12 @@ function OrderCard({ order, isNew, onAction, isLoading, onSlipView }) {
               </span>
             )}
           </div>
-          <div className="mt-1 flex items-center gap-3 flex-wrap text-xs text-stone-500">
+          <button onClick={() => onCustomerView?.(order)}
+            className="mt-1 flex items-center gap-3 flex-wrap text-xs text-stone-500 hover:text-red-700 hover:underline transition-colors text-left">
             <span>👤 {order.customer_name}</span>
             <span>📞 {order.customer_phone}</span>
             <span className="text-[10px]">{elapsed(order.created_at)}</span>
-          </div>
+          </button>
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-lg font-black text-orange-600">฿{Number(order.total_price).toLocaleString()}</p>
@@ -362,6 +364,7 @@ export default function AdminDeliveryDashboard() {
   const [connected,  setConnected]  = useState(false)
   const [slipOrder,  setSlipOrder]  = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [customerView, setCustomerView] = useState(null) // { phone, name } | null
 
   // ── Filter ──
   const [filterStatus, setFilterStatus] = useState('active')  // 'active' | 'all' | status key
@@ -454,6 +457,13 @@ export default function AdminDeliveryDashboard() {
 
       {slipOrder    && <SlipModal     order={slipOrder} onClose={() => setSlipOrder(null)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {customerView && (
+        <CustomerProfileDrawer
+          phone={customerView.phone}
+          customerName={customerView.name}
+          onClose={() => setCustomerView(null)}
+        />
+      )}
 
       {/* ── Header ── */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-orange-500 via-orange-600 to-rose-600 text-white shadow-xl">
@@ -561,6 +571,7 @@ export default function AdminDeliveryDashboard() {
                 onAction={handleAction}
                 isLoading={actionLoading === order.id}
                 onSlipView={setSlipOrder}
+                onCustomerView={o => setCustomerView({ phone: o.customer_phone, name: o.customer_name })}
               />
             ))}
           </div>
