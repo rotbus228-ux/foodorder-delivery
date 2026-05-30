@@ -58,20 +58,13 @@ function playAlert() {
 }
 
 /* ── SlipModal ──────────────────────────────────────────────────── */
-function SlipModal({ order, settings = {}, onClose }) {
-  const adminName  = settings.payment_account_name || ''
-  const slipName   = order.payment_slip_name || ''
-  const mismatch   = order.payment_name_mismatch
-
+function SlipModal({ order, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
-        <div className={`px-5 py-4 flex items-center justify-between ${mismatch ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-blue-500 to-indigo-500'}`}>
-          <div>
-            <h2 className="text-white font-black text-base">💳 สลีปโอนเงิน #{order.id}</h2>
-            {mismatch && <p className="text-red-100 text-xs font-bold mt-0.5">⚠️ ชื่อบัญชีไม่ตรง — ตรวจสอบด้วยตนเอง</p>}
-          </div>
+        <div className="px-5 py-4 flex items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-500">
+          <h2 className="text-white font-black text-base">💳 สลีปโอนเงิน #{order.id}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
@@ -90,31 +83,6 @@ function SlipModal({ order, settings = {}, onClose }) {
             <div className="py-10 text-center text-stone-400">
               <p className="text-3xl">📭</p>
               <p className="text-sm font-bold mt-2">ยังไม่มีสลีป</p>
-            </div>
-          )}
-
-          {/* ── ตรวจสอบชื่อบัญชี ── */}
-          {slipName && (
-            <div className={`rounded-2xl px-4 py-3 space-y-2 text-sm border ${mismatch ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
-              <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest">ตรวจสอบชื่อบัญชี</p>
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-stone-500 text-xs">ชื่อในสลีป</span>
-                <span className={`font-black text-sm ${mismatch ? 'text-red-700' : 'text-emerald-700'}`}>{slipName}</span>
-              </div>
-              {adminName && (
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-stone-500 text-xs">ชื่อบัญชีร้าน</span>
-                  <span className="font-black text-sm text-stone-800">{adminName}</span>
-                </div>
-              )}
-              <div className={`text-xs font-black text-center py-1 rounded-xl ${mismatch ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                {mismatch ? '⚠️ ชื่อไม่ตรงกัน — ตรวจสอบสลีปด้วยตนเอง' : '✅ ชื่อบัญชีตรงกัน'}
-              </div>
-            </div>
-          )}
-          {!slipName && (
-            <div className="bg-stone-50 border border-stone-200 rounded-2xl px-4 py-2.5 text-xs text-stone-400 font-bold text-center">
-              ลูกค้าไม่ได้กรอกชื่อบัญชีปลายทาง
             </div>
           )}
 
@@ -160,11 +128,6 @@ function OrderCard({ order, isNew, onAction, isLoading, onSlipView }) {
             {urgency !== 'normal' && (
               <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${urgency === 'critical' ? 'bg-rose-100 text-rose-600' : 'bg-yellow-100 text-yellow-700'}`}>
                 ⏱ {waitMins}น.
-              </span>
-            )}
-            {order.payment_name_mismatch && (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 animate-pulse">
-                ⚠️ ชื่อไม่ตรง
               </span>
             )}
           </div>
@@ -399,7 +362,6 @@ export default function AdminDeliveryDashboard() {
   const [connected,  setConnected]  = useState(false)
   const [slipOrder,  setSlipOrder]  = useState(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [settings,   setSettings]   = useState({})
 
   // ── Filter ──
   const [filterStatus, setFilterStatus] = useState('active')  // 'active' | 'all' | status key
@@ -429,12 +391,6 @@ export default function AdminDeliveryDashboard() {
   }, [])
 
   useEffect(() => { fetchOrders(); fetchStats() }, [fetchOrders, fetchStats])
-
-  useEffect(() => {
-    axios.get(`${API_BASE}/settings`, { headers: getAuthHeaders() })
-      .then(r => setSettings(r.data?.data || {}))
-      .catch(() => {})
-  }, [])
 
   /* ── Socket ── */
   useEffect(() => {
@@ -496,7 +452,7 @@ export default function AdminDeliveryDashboard() {
   return (
     <div className="min-h-screen bg-stone-50">
 
-      {slipOrder    && <SlipModal     order={slipOrder} settings={settings} onClose={() => setSlipOrder(null)} />}
+      {slipOrder    && <SlipModal     order={slipOrder} onClose={() => setSlipOrder(null)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       {/* ── Header ── */}

@@ -5,6 +5,7 @@ const delivery   = require('../controllers/deliveryController');
 // getOrdersByPhone destructured separately for clarity
 const menuController     = require('../controllers/menuController');
 const settingsController = require('../controllers/settingsController');
+const ban                = require('../controllers/banController');
 const { upload, uploadMenuImage, uploadQrImage } = require('../controllers/uploadController');
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -42,5 +43,11 @@ router.patch('/delivery/orders/:id/status',    adminAuth, delivery.updateDeliver
 
 // ─── Stats — Admin ────────────────────────────────────────────────────────────
 router.get('/stats/today', adminAuth, delivery.getTodayStats);
+
+// ─── Banned Phones ────────────────────────────────────────────────────────────
+router.get   ('/delivery/check-ban',          ban.checkBan);                 // public
+router.get   ('/admin/banned-phones',         adminAuth, ban.listBanned);
+router.post  ('/admin/ban-phone',             adminAuth, ban.banPhone);
+router.delete('/admin/ban-phone/:phone',      adminAuth, ban.unbanPhone);
 
 module.exports = router;

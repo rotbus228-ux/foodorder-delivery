@@ -28,10 +28,8 @@ function fmtDate(s) {
 /* ════════════════════════════════════════════════════════
    SlipModal
 ════════════════════════════════════════════════════════ */
-function SlipModal({ order, adminName, onClose }) {
+function SlipModal({ order, onClose }) {
   if (!order) return null
-  const mismatch = order.payment_name_mismatch
-  const slipName = order.payment_slip_name || ''
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -41,12 +39,10 @@ function SlipModal({ order, adminName, onClose }) {
       <div className="relative w-full sm:max-w-sm bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl overflow-hidden"
         style={{ animation: 'slideUp .3s cubic-bezier(.16,1,.3,1)' }}>
 
-        {/* ── handle ── */}
         <div className="sm:hidden flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-stone-300 rounded-full" />
         </div>
 
-        {/* ── header ── */}
         <div className="px-5 pt-3 pb-4 flex items-center justify-between">
           <div>
             <p className="text-xs text-stone-400 font-bold">หลักฐานการโอนเงิน</p>
@@ -61,15 +57,9 @@ function SlipModal({ order, adminName, onClose }) {
         </div>
 
         <div className="px-5 pb-6 space-y-4">
-
-          {/* ── slip image ── */}
           {order.payment_slip_url ? (
             <div className="relative rounded-2xl overflow-hidden border border-stone-100 bg-stone-50">
-              <img
-                src={order.payment_slip_url}
-                alt="payment slip"
-                className="w-full max-h-80 object-contain"
-              />
+              <img src={order.payment_slip_url} alt="payment slip" className="w-full max-h-80 object-contain" />
               <a href={order.payment_slip_url} target="_blank" rel="noreferrer"
                 className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-white text-xs font-bold backdrop-blur-sm transition-colors">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -85,7 +75,6 @@ function SlipModal({ order, adminName, onClose }) {
             </div>
           )}
 
-          {/* ── ยอด ── */}
           <div className="bg-stone-50 rounded-2xl px-4 py-3 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-stone-500">ยอดที่ต้องโอน</span>
@@ -101,28 +90,6 @@ function SlipModal({ order, adminName, onClose }) {
               </div>
             )}
           </div>
-
-          {/* ── ตรวจชื่อ ── */}
-          {slipName ? (
-            <div className={`rounded-2xl px-4 py-3 space-y-2 ${mismatch ? 'bg-red-50 border border-red-200' : 'bg-emerald-50 border border-emerald-200'}`}>
-              <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">ตรวจสอบชื่อบัญชี</p>
-              <div className="flex justify-between items-baseline text-sm gap-3">
-                <span className="text-stone-500 flex-shrink-0">ชื่อในสลีป</span>
-                <span className={`font-black text-right ${mismatch ? 'text-red-700' : 'text-emerald-700'}`}>{slipName}</span>
-              </div>
-              {adminName && (
-                <div className="flex justify-between items-baseline text-sm gap-3">
-                  <span className="text-stone-500 flex-shrink-0">ชื่อบัญชีร้าน</span>
-                  <span className="font-black text-stone-800 text-right">{adminName}</span>
-                </div>
-              )}
-              <p className={`text-xs font-black text-center py-1.5 rounded-xl mt-1 ${mismatch ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                {mismatch ? '⚠️ ชื่อไม่ตรงกัน — ตรวจสอบด้วยตนเอง' : '✅ ชื่อตรงกัน'}
-              </p>
-            </div>
-          ) : (
-            <p className="text-center text-xs text-stone-400 font-semibold">ลูกค้าไม่ได้กรอกชื่อบัญชีปลายทาง</p>
-          )}
         </div>
       </div>
     </div>
@@ -136,7 +103,6 @@ function OrderCard({ order, onSlip }) {
   const sc         = STATUS_CFG[order.status] || STATUS_CFG.pending
   const isTransfer = order.payment_method === 'transfer'
   const hasSlip    = !!order.payment_slip_url
-  const mismatch   = order.payment_name_mismatch
 
   return (
     <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
@@ -188,11 +154,6 @@ function OrderCard({ order, onSlip }) {
                     {Number(order.payment_amount) === Number(order.total_price) ? ' ✓' : ' ⚠️'}
                   </span>
                 )}
-                {mismatch && (
-                  <span className="text-[9px] font-black text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                    ⚠️ ชื่อไม่ตรง
-                  </span>
-                )}
               </>
             ) : (
               <span className="text-xs text-stone-500 font-bold">💵 เงินสด</span>
@@ -205,9 +166,7 @@ function OrderCard({ order, onSlip }) {
               onClick={() => onSlip(order)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all active:scale-95 ${
                 hasSlip
-                  ? mismatch
-                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm shadow-red-300/40'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-300/40'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-300/40'
                   : 'bg-stone-100 hover:bg-stone-200 text-stone-500'
               }`}
             >
@@ -232,7 +191,6 @@ export default function AdminOrderHistoryPage() {
 
   const [orders,   setOrders]   = useState([])
   const [loading,  setLoading]  = useState(true)
-  const [settings, setSettings] = useState({})
   const [slipView, setSlipView] = useState(null)
 
   const logout = () => { adminLogout(); navigate('/admin/login') }
@@ -251,21 +209,11 @@ export default function AdminOrderHistoryPage() {
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
-  useEffect(() => {
-    axios.get(`${API_BASE}/settings`, { headers: getAuthHeaders() })
-      .then(r => setSettings(r.data?.data || {}))
-      .catch(() => {})
-  }, [])
-
   return (
     <div className="min-h-screen bg-stone-50">
 
       {slipView && (
-        <SlipModal
-          order={slipView}
-          adminName={settings.payment_account_name || ''}
-          onClose={() => setSlipView(null)}
-        />
+        <SlipModal order={slipView} onClose={() => setSlipView(null)} />
       )}
 
       {/* ── Header ── */}

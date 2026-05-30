@@ -134,26 +134,50 @@ export default function ProfilePage() {
   const [saving,       setSaving]       = useState(false)
   const [saved,        setSaved]        = useState(false)
   const [locError,     setLocError]     = useState(false)
+  const [banned,       setBanned]       = useState(null) // null = ยังไม่ได้เช็ค, true/false
   const [showMap,      setShowMap]      = useState(false)
   const [showContact,  setShowContact]  = useState(false)
   const [settings,     setSettings]     = useState({})
 
-  /* ── โหลด profile จาก localStorage ── */
+  /* ── โหลด profile + เช็คเบอร์ที่ถูกแบน ── */
   useEffect(() => {
     const s = localStorage.getItem(PROFILE_KEY)
+    let savedPhone = ''
+    let savedProfile = null
+
     if (s) {
       try {
-        const p = JSON.parse(s)
-        setForm(p)
-        const complete = !!(p.name?.trim() && p.phone?.trim() && p.address?.trim() && p.location)
-        setHasProfile(complete)
-        // ถ้าข้อมูลครบและไม่ใช่ edit mode → ไปหน้าเมนูเลย
-        if (complete && !isEditMode) {
-          navigate('/order', { replace: true })
-          return
-        }
+        savedProfile = JSON.parse(s)
+        setForm(savedProfile)
+        savedPhone = savedProfile.phone || ''
       } catch {}
     }
+
+    // เช็คเบอร์ที่ถูกแบนก่อน redirect
+    const checkBan = async () => {
+      let isBanned = false
+      if (savedPhone) {
+        try {
+          const r = await axios.get(`${API_BASE}/delivery/check-ban`, { params: { phone: savedPhone } })
+          isBanned = !!r.data?.banned
+        } catch {}
+      }
+      setBanned(isBanned)
+
+      // ถ้าถูกแบน — ไม่ทำอะไรต่อ (จะแสดงหน้า ban)
+      if (isBanned) return
+
+      // ถ้าข้อมูลครบและไม่ใช่ edit mode → ไปหน้าเมนูเลย
+      if (savedProfile) {
+        const complete = !!(savedProfile.name?.trim() && savedProfile.phone?.trim() && savedProfile.address?.trim() && savedProfile.location)
+        setHasProfile(complete)
+        if (complete && !isEditMode) {
+          navigate('/order', { replace: true })
+        }
+      }
+    }
+    checkBan()
+
     axios.get(`${API_BASE}/settings`).then(r => setSettings(r.data?.data || {})).catch(() => {})
   }, [])
 
@@ -176,6 +200,32 @@ export default function ProfilePage() {
     setSaving(false)
     // หลัง save → ไปหน้าเมนูเลย
     setTimeout(() => navigate('/order', { replace: true }), 600)
+  }
+
+  /* ── หน้าถูกระงับการใช้งาน ── */
+  if (banned === true) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+        <div className="max-w-sm w-full bg-white rounded-3xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-red-700 to-rose-800 px-6 py-8 text-center">
+            <div className="text-6xl mb-3">🚫</div>
+            <h1 className="text-white font-black text-xl">บัญชีถูกระงับ</h1>
+            <p className="text-red-100 text-sm mt-1.5">ไม่สามารถใช้งานเว็บไซต์ได้</p>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <div className="bg-stone-50 rounded-2xl px-4 py-3 text-sm text-stone-600 leading-relaxed">
+              เบอร์โทร <span className="font-black text-stone-900">{form.phone}</span> ของคุณถูกระงับการสั่งอาหาร
+              หากเข้าใจว่าเป็นข้อผิดพลาด กรุณาติดต่อร้านค้า
+            </div>
+            <button onClick={() => setShowContact(true)}
+              className="w-full py-3 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-black text-sm shadow-lg shadow-red-200 active:scale-95 transition-all">
+              📞 ติดต่อร้านค้า
+            </button>
+          </div>
+        </div>
+        {showContact && <ContactModal settings={settings} onClose={() => setShowContact(false)} />}
+      </div>
+    )
   }
 
   return (

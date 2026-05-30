@@ -30,7 +30,7 @@ function timeAgo(d) {
 }
 
 /* ── Customer Detail Drawer ────────────────────────────────────────── */
-function CustomerDrawer({ customer, onClose }) {
+function CustomerDrawer({ customer, onClose, isBanned, onToggleBan, banLoading }) {
   if (!customer) return null
   const { name, phone, address, orders } = customer
   const active = orders.filter(o => !['delivered','cancelled'].includes(o.status))
@@ -46,19 +46,45 @@ function CustomerDrawer({ customer, onClose }) {
         style={{ animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-900 to-red-700 px-5 py-4 flex items-center gap-3 flex-shrink-0">
+        <div className={`px-5 py-4 flex items-center gap-3 flex-shrink-0 ${isBanned ? 'bg-gradient-to-r from-stone-700 to-stone-900' : 'bg-gradient-to-r from-red-900 to-red-700'}`}>
           <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white">
-            {name?.charAt(0) || '?'}
+            {isBanned ? '🚫' : (name?.charAt(0) || '?')}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-black text-white text-base truncate">{name}</p>
-            <a href={`tel:${phone}`} className="text-red-200 text-sm font-bold">{phone}</a>
+            <div className="flex items-center gap-2">
+              <p className="font-black text-white text-base truncate">{name}</p>
+              {isBanned && (
+                <span className="text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">
+                  BANNED
+                </span>
+              )}
+            </div>
+            <a href={`tel:${phone}`} className={`text-sm font-bold ${isBanned ? 'text-stone-300' : 'text-red-200'}`}>{phone}</a>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
           </button>
+        </div>
+
+        {/* Ban / Unban action bar */}
+        <div className={`px-5 py-3 border-b border-stone-100 flex-shrink-0 ${isBanned ? 'bg-stone-50' : 'bg-white'}`}>
+          {isBanned ? (
+            <button onClick={() => onToggleBan(phone, false)} disabled={banLoading}
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-sm shadow-emerald-200 active:scale-95 transition-all disabled:opacity-60">
+              {banLoading ? '⏳ กำลังประมวลผล...' : '✅ ปลดแบนเบอร์นี้'}
+            </button>
+          ) : (
+            <button onClick={() => {
+              if (confirm(`แบนเบอร์ ${phone} ใช่หรือไม่?\n\nลูกค้าจะไม่สามารถสั่งอาหารได้อีก จนกว่าจะปลดแบน`)) {
+                onToggleBan(phone, true)
+              }
+            }} disabled={banLoading}
+              className="w-full py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-black text-sm active:scale-95 transition-all disabled:opacity-60">
+              {banLoading ? '⏳ กำลังประมวลผล...' : '🚫 แบนเบอร์นี้ — ไม่ให้สั่งได้อีก'}
+            </button>
+          )}
         </div>
 
         {/* Stats */}
@@ -159,14 +185,17 @@ function OrderRow({ order }) {
    AdminCustomersPage
 ══════════════════════════════════════════════════════════════════ */
 export default function AdminCustomersPage() {
-  const navigate  = useNavigate()
+  const navigate    = useNavigate()
   const [orders,    setOrders]    = useState([])
   const [loading,   setLoading]   = useState(true)
   const [search,    setSearch]    = useState('')
   const [selected,  setSelected]  = useState(null)  // customer object
+  const [bannedSet, setBannedSet] = useState(new Set())
+  const [banLoading,setBanLoading]= useState(false)
 
   useEffect(() => {
     fetchOrders()
+    fetchBanned()
   }, [])
 
   const fetchOrders = async () => {
@@ -178,6 +207,35 @@ export default function AdminCustomersPage() {
       handleAuthError(err, navigate)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchBanned = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/admin/banned-phones`, { headers: getAuthHeaders() })
+      setBannedSet(new Set((res.data?.data || []).map(b => b.phone)))
+    } catch { /* ignore */ }
+  }
+
+  // เปรียบเทียบเบอร์แบบ normalize (เหลือเฉพาะตัวเลข)
+  const normPhone = p => String(p || '').replace(/\D/g, '')
+  const isBanned  = phone => bannedSet.has(normPhone(phone))
+
+  const handleToggleBan = async (phone, shouldBan) => {
+    setBanLoading(true)
+    const np = normPhone(phone)
+    try {
+      if (shouldBan) {
+        await axios.post(`${API_BASE}/admin/ban-phone`, { phone: np }, { headers: getAuthHeaders() })
+        setBannedSet(prev => new Set(prev).add(np))
+      } else {
+        await axios.delete(`${API_BASE}/admin/ban-phone/${np}`, { headers: getAuthHeaders() })
+        setBannedSet(prev => { const next = new Set(prev); next.delete(np); return next })
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'ทำรายการไม่สำเร็จ')
+    } finally {
+      setBanLoading(false)
     }
   }
 
@@ -217,7 +275,13 @@ export default function AdminCustomersPage() {
     <div className="min-h-screen bg-stone-50">
 
       {selected && (
-        <CustomerDrawer customer={selected} onClose={() => setSelected(null)} />
+        <CustomerDrawer
+          customer={selected}
+          isBanned={isBanned(selected.phone)}
+          onToggleBan={handleToggleBan}
+          banLoading={banLoading}
+          onClose={() => setSelected(null)}
+        />
       )}
 
       {/* Header */}
@@ -281,21 +345,31 @@ export default function AdminCustomersPage() {
           </div>
         )}
 
-        {!loading && filtered.map(c => (
+        {!loading && filtered.map(c => {
+          const banned = isBanned(c.phone)
+          return (
           <button key={c.phone} onClick={() => setSelected(c)}
-            className="w-full bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden text-left hover:border-red-200 hover:shadow-md active:scale-[0.99] transition-all">
+            className={`w-full bg-white rounded-2xl border shadow-sm overflow-hidden text-left hover:shadow-md active:scale-[0.99] transition-all ${banned ? 'border-stone-300 opacity-75' : 'border-stone-100 hover:border-red-200'}`}>
             <div className="px-4 py-4 flex items-center gap-3">
 
               {/* Avatar */}
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white flex-shrink-0 ${c.hasActive ? 'bg-gradient-to-br from-red-500 to-rose-600' : 'bg-gradient-to-br from-stone-400 to-stone-500'}`}>
-                {c.name?.charAt(0) || '?'}
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white flex-shrink-0 ${
+                banned ? 'bg-gradient-to-br from-stone-500 to-stone-700' :
+                c.hasActive ? 'bg-gradient-to-br from-red-500 to-rose-600' : 'bg-gradient-to-br from-stone-400 to-stone-500'
+              }`}>
+                {banned ? '🚫' : (c.name?.charAt(0) || '?')}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="font-black text-stone-900 text-sm truncate">{c.name}</p>
-                  {c.hasActive && (
+                  <p className={`font-black text-sm truncate ${banned ? 'text-stone-500 line-through' : 'text-stone-900'}`}>{c.name}</p>
+                  {banned && (
+                    <span className="flex-shrink-0 text-[9px] font-black text-white bg-red-600 px-1.5 py-0.5 rounded-full">
+                      🚫 ถูกแบน
+                    </span>
+                  )}
+                  {!banned && c.hasActive && (
                     <span className="flex-shrink-0 flex items-center gap-1 text-[9px] font-black text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                       มีออเดอร์
@@ -318,7 +392,8 @@ export default function AdminCustomersPage() {
               </svg>
             </div>
           </button>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

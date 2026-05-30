@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const { sendDeliveryNotification } = require('../config/telegram');
+const { isPhoneBanned } = require('./banController');
 
 /* ── Bangkok timezone helpers (UTC+7) ───────────────────────────── */
 function getBangkokDateStr() {
@@ -42,6 +43,11 @@ async function createDeliveryOrder(req, res) {
     return res.status(400).json({ success: false, message: 'จำนวนรายการมากเกินไป' });
   if (!['cash', 'transfer'].includes(payment_method))
     return res.status(400).json({ success: false, message: 'วิธีชำระเงินไม่ถูกต้อง' });
+
+  // ── ตรวจสอบเบอร์ที่ถูกแบน ──
+  if (await isPhoneBanned(customer_phone)) {
+    return res.status(403).json({ success: false, message: 'เบอร์นี้ถูกระงับการใช้งาน กรุณาติดต่อร้านค้า', banned: true });
+  }
 
   try {
     // ── ดึง delivery_fee จาก settings ──
@@ -192,7 +198,7 @@ async function updateDeliveryStatus(req, res) {
 /* ── uploadPaymentSlip (public — ลูกค้าอัปโหลดสลีป) ─────────── */
 async function uploadPaymentSlip(req, res) {
   const { id } = req.params;
-  const { payment_amount, slip_account_name } = req.body;
+  const { payment_amount } = req.body;
 
   if (!req.file) return res.status(400).json({ success: false, message: 'ไม่พบไฟล์สลีป' });
 
@@ -238,30 +244,12 @@ async function uploadPaymentSlip(req, res) {
     const { data: urlData } = supabase.storage
       .from('payment-slips').getPublicUrl(filename);
 
-    // ── ตรวจสอบชื่อบัญชี ──
-    let payment_name_mismatch = false;
-    const slipName = (slip_account_name || '').trim();
-    if (slipName) {
-      const { data: acctRow } = await supabase
-        .from('settings').select('value').eq('key', 'payment_account_name').single();
-      const adminName = (acctRow?.value || '').trim();
-      if (adminName) {
-        // เปรียบเทียบแบบ fuzzy: lowercase + ไม่มีช่องว่าง
-        const norm = s => s.toLowerCase().replace(/\s+/g, '');
-        const n1 = norm(slipName);
-        const n2 = norm(adminName);
-        payment_name_mismatch = !(n1.includes(n2) || n2.includes(n1));
-      }
-    }
-
     const updateData = {
       payment_slip_url: urlData.publicUrl,
       updated_at: new Date(),
       status: 'pending',   // เมื่อลูกค้าส่งสลีป → เปลี่ยนจาก pending_payment → pending
-      payment_name_mismatch,
     };
     if (payment_amount) updateData.payment_amount = Number(payment_amount);
-    if (slipName)       updateData.payment_slip_name = slipName;
 
     const { error: updateError } = await supabase
       .from('delivery_orders')

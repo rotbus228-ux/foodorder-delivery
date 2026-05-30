@@ -144,7 +144,6 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
   const [slipFile,    setSlipFile]    = useState(null)
   const [slipPreview, setSlipPreview] = useState(null)
   const [payAmount,   setPayAmount]   = useState('')
-  const [slipName,    setSlipName]    = useState('')
   const [sending,     setSending]     = useState(false)
   const [errorMsg,    setErrorMsg]    = useState('')
   const fileRef = useRef()
@@ -188,14 +187,19 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
       if (payMethod === 'transfer' && slipFile) {
         const fd = new FormData()
         fd.append('slip', slipFile)
-        if (payAmount)  fd.append('payment_amount',    payAmount)
-        if (slipName.trim()) fd.append('slip_account_name', slipName.trim())
+        if (payAmount) fd.append('payment_amount', payAmount)
         await axios.post(`${API_BASE}/delivery/orders/${order.id}/slip`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       }
       onSuccess(order)
     } catch (err) {
+      // ถ้าเบอร์โดนแบน → พากลับหน้าแรก (จะแสดงหน้าระงับ)
+      if (err.response?.status === 403 && err.response?.data?.banned) {
+        alert(err.response.data.message || 'เบอร์นี้ถูกระงับการใช้งาน')
+        window.location.href = '/'
+        return
+      }
       setErrorMsg(err.response?.data?.message || err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
     } finally {
       setSending(false)
@@ -406,22 +410,6 @@ function CheckoutModal({ cart, cartTotal, customerInfo, settings, onClose, onSuc
                       เลือกสลีป
                     </button>
                   )}
-                </div>
-
-                {/* ชื่อบัญชีที่รับเงิน */}
-                <div>
-                  <p className="text-xs font-black text-stone-500 uppercase tracking-widest mb-2">
-                    ชื่อบัญชีที่รับเงิน (ตามในสลีป)
-                    <span className="ml-1 text-stone-400 text-[10px] normal-case font-normal">ไม่บังคับ แต่ช่วยตรวจสอบ</span>
-                  </p>
-                  <input
-                    type="text"
-                    value={slipName}
-                    onChange={e => setSlipName(e.target.value)}
-                    placeholder={settings.payment_account_name || 'ชื่อบัญชีผู้รับเงิน'}
-                    className="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 text-sm font-bold text-stone-800 placeholder-stone-400 focus:border-red-400 focus:ring-4 focus:ring-red-100 focus:outline-none transition-all"
-                  />
-                  <p className="text-stone-400 text-[10px] mt-1">ดูชื่อบัญชีผู้รับจากหน้าสลีปในแอปธนาคาร</p>
                 </div>
 
                 {/* ยอดที่โอน */}
